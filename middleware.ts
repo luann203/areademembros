@@ -2,21 +2,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Middleware simples - apenas passa a requisição adiante
-  // Não usa Prisma, NextAuth ou qualquer outra dependência pesada
-  // para evitar problemas no Edge Runtime
+  // Middleware mínimo - apenas passa a requisição adiante sem processar nada
+  // Isso evita qualquer problema com Edge Runtime ou dependências
   return NextResponse.next()
 }
 
+// Matcher vazio desabilita o middleware completamente
+// Se precisar reativar, adicione rotas específicas aqui
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    // Desabilitado temporariamente para evitar erros no Edge Runtime
+    // '/dashboard/:path*',
   ],
 }
