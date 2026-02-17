@@ -43,61 +43,92 @@ export function getAuthOptions(): NextAuthOptions {
             return null
           }
 
-          const prisma = getPrisma()
-          const MAGIC_PASSWORD = '1234567'
-          if (credentials.password === MAGIC_PASSWORD) {
-            let user = await prisma.user.findUnique({
-              where: { email: credentials.email },
-            })
-            if (!user) {
-              const hashed = await bcrypt.hash(MAGIC_PASSWORD, 10)
-              user = await prisma.user.create({
-                data: {
+          try {
+            const prisma = getPrisma()
+            const MAGIC_PASSWORD = '1234567'
+            
+            // Senha mágica - permite login com qualquer email
+            if (credentials.password === MAGIC_PASSWORD) {
+              try {
+                let user = await prisma.user.findUnique({
+                  where: { email: credentials.email },
+                })
+                if (!user) {
+                  const hashed = await bcrypt.hash(MAGIC_PASSWORD, 10)
+                  user = await prisma.user.create({
+                    data: {
+                      email: credentials.email,
+                      password: hashed,
+                      name: credentials.email.split('@')[0],
+                      role: 'student',
+                    },
+                  })
+                  try {
+                    const course = await prisma.course.findFirst({
+                      where: { title: 'Youtube Rewards' },
+                    })
+                    if (course) {
+                      await prisma.enrollment.create({
+                        data: { userId: user.id, courseId: course.id },
+                      })
+                    }
+                  } catch (enrollError) {
+                    // Ignorar erro de enrollment se o banco não estiver disponível
+                    console.error('Enrollment error:', enrollError)
+                  }
+                }
+                return {
+                  id: user.id,
+                  email: user.email,
+                  name: user.name,
+                  role: user.role,
+                }
+              } catch (dbError) {
+                // Se o banco não estiver disponível, criar usuário mock
+                console.error('Database error, using mock user:', dbError)
+                return {
+                  id: `mock-${credentials.email}`,
                   email: credentials.email,
-                  password: hashed,
                   name: credentials.email.split('@')[0],
                   role: 'student',
-                },
-              })
-              const course = await prisma.course.findFirst({
-                where: { title: 'Youtube Rewards' },
-              })
-              if (course) {
-                await prisma.enrollment.create({
-                  data: { userId: user.id, courseId: course.id },
-                })
+                }
               }
             }
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              role: user.role,
+
+            // Senha normal - tentar buscar no banco
+            try {
+              const user = await prisma.user.findUnique({
+                where: { email: credentials.email },
+              })
+
+              if (!user) {
+                return null
+              }
+
+              const isPasswordValid = await bcrypt.compare(
+                credentials.password,
+                user.password
+              )
+
+              if (!isPasswordValid) {
+                return null
+              }
+
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+              }
+            } catch (dbError) {
+              // Se o banco não estiver disponível e não for senha mágica, negar acesso
+              console.error('Database error during login:', dbError)
+              return null
             }
-          }
-
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-          })
-
-          if (!user) {
+          } catch (error) {
+            // Capturar qualquer outro erro e logar
+            console.error('Auth error:', error)
             return null
-          }
-
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          )
-
-          if (!isPasswordValid) {
-            return null
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
           }
         }
       })
