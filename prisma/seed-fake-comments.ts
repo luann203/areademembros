@@ -134,7 +134,7 @@ const COMMENTS_BY_LESSON: Record<string, string[]> = {
   ],
 }
 
-const COUNTS = {
+const COUNTS: Record<string, number> = {
   'Start here': 15,
   'Meeting the tool': 12,
   'Exploring the platform': 25,
