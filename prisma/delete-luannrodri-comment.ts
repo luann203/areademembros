@@ -3,12 +3,25 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  const result = await prisma.comment.deleteMany({
+  // Buscar usuários que contenham 'luannrodri' no email ou nome (case-insensitive)
+  const users = await prisma.user.findMany({
     where: {
       OR: [
-        { user: { email: { contains: 'luannrodri', mode: 'insensitive' } } },
-        { user: { name: { contains: 'luannrodri', mode: 'insensitive' } } },
+        { email: { contains: 'luannrodri' } },
+        { name: { contains: 'luannrodri' } },
       ],
+    },
+  })
+
+  if (users.length === 0) {
+    console.log('Nenhum usuário encontrado com "luannrodri"')
+    return
+  }
+
+  const userIds = users.map((u) => u.id)
+  const result = await prisma.comment.deleteMany({
+    where: {
+      userId: { in: userIds },
     },
   })
   console.log(`${result.count} comentário(s) do luannrodri removido(s)`)
