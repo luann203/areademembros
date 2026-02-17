@@ -1,7 +1,11 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { prisma } from './prisma'
+// Lazy load prisma para evitar inicialização durante build
+function getPrisma() {
+  const { prisma } = require('./prisma')
+  return prisma
+}
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -17,6 +21,7 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const prisma = getPrisma()
         const MAGIC_PASSWORD = '1234567'
         if (credentials.password === MAGIC_PASSWORD) {
           let user = await prisma.user.findUnique({
