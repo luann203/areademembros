@@ -1,6 +1,10 @@
 import NextAuth from 'next-auth'
 import { getAuthOptions } from '@/lib/auth'
 
+// Forçar rota dinâmica para evitar análise durante build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Lazy initialization - só cria o handler quando a rota é chamada, não durante o build
 let handler: ReturnType<typeof NextAuth> | null = null
 

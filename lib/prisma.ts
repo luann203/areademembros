@@ -4,17 +4,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Detectar se estamos em build time
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                     process.env.NEXT_PHASE === 'phase-development-build'
+// Detectar se estamos em build time (várias formas de detectar)
+const isBuildTime = 
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.NEXT_PHASE === 'phase-development-build' ||
+  process.env.VERCEL === '1' && !process.env.VERCEL_ENV ||
+  typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL
 
 // Criar Prisma Client apenas em runtime, não durante build
 function createPrismaClient(): PrismaClient {
+  // Se estiver em build time, retornar um proxy que não inicializa o cliente real
   if (isBuildTime) {
-    // Durante build, retornar um proxy que lança erro se tentar usar
     return new Proxy({} as PrismaClient, {
-      get() {
-        throw new Error('Prisma Client não pode ser usado durante o build. Use apenas em runtime.')
+      get(target, prop) {
+        // Durante build, retornar funções vazias que não fazem nada
+        if (typeof prop === 'string' && prop !== 'constructor') {
+          return () => Promise.resolve(null)
+        }
+        return undefined
       }
     })
   }
