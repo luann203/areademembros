@@ -23,14 +23,31 @@ function getPrisma() {
     } as any
   }
   
-  // Em runtime, importar o Prisma real
-  const { prisma } = require('./prisma')
-  return prisma
+  // Em runtime, tentar importar o Prisma real
+  try {
+    const { prisma } = require('./prisma')
+    return prisma
+  } catch (error) {
+    // Se não conseguir importar, retornar mock
+    console.error('Failed to load Prisma, using mock:', error)
+    return {
+      user: {
+        findUnique: () => Promise.reject(new Error('Database not available')),
+        create: () => Promise.reject(new Error('Database not available')),
+      },
+      course: {
+        findFirst: () => Promise.reject(new Error('Database not available')),
+      },
+      enrollment: {
+        create: () => Promise.reject(new Error('Database not available')),
+      },
+    } as any
+  }
 }
 
 export function getAuthOptions(): NextAuthOptions {
   return {
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development-change-in-production',
     providers: [
       CredentialsProvider({
         name: 'Credentials',
@@ -86,10 +103,11 @@ export function getAuthOptions(): NextAuthOptions {
               } catch (dbError) {
                 // Se o banco não estiver disponível, criar usuário mock
                 console.error('Database error, using mock user:', dbError)
+                const emailName = credentials.email.split('@')[0] || 'User'
                 return {
-                  id: `mock-${credentials.email}`,
+                  id: `mock-${Date.now()}-${credentials.email}`,
                   email: credentials.email,
-                  name: credentials.email.split('@')[0],
+                  name: emailName,
                   role: 'student',
                 }
               }
@@ -156,6 +174,18 @@ export function getAuthOptions(): NextAuthOptions {
           session.user.role = (token.role ?? 'student') as string
         }
         return session
+      },
+    },
+    debug: process.env.NODE_ENV === 'development',
+    events: {
+      async signIn({ user, account, profile }) {
+        console.log('Sign in event:', { user: user?.email, account: account?.provider })
+      },
+      async signOut() {
+        console.log('Sign out event')
+      },
+      async error({ error }) {
+        console.error('NextAuth error event:', error)
       },
     },
   }
