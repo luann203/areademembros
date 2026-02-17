@@ -132,16 +132,40 @@ export function getAuthOptions(): NextAuthOptions {
 
 // Export lazy para compatibilidade - só executa quando realmente necessário
 let _authOptions: NextAuthOptions | null = null
-export function getAuthOptionsLazy(): NextAuthOptions {
+
+function getAuthOptionsLazy(): NextAuthOptions {
   if (!_authOptions) {
     _authOptions = getAuthOptions()
   }
   return _authOptions
 }
 
-// Export para compatibilidade (mas lazy)
+// Export como objeto usando Proxy para manter compatibilidade
+// mas evitar inicialização durante import/build
 export const authOptions = new Proxy({} as NextAuthOptions, {
-  get(target, prop) {
-    return getAuthOptionsLazy()[prop as keyof NextAuthOptions]
-  }
-})
+  get(_target, prop: string | symbol) {
+    const options = getAuthOptionsLazy()
+    const value = (options as any)[prop]
+    // Se for uma função, bind para manter o contexto
+    if (typeof value === 'function') {
+      return value.bind(options)
+    }
+    return value
+  },
+  ownKeys() {
+    const options = getAuthOptionsLazy()
+    return Object.keys(options) as (string | symbol)[]
+  },
+  getOwnPropertyDescriptor(_target, prop: string | symbol) {
+    const options = getAuthOptionsLazy()
+    const value = (options as any)[prop]
+    if (value !== undefined) {
+      return {
+        enumerable: true,
+        configurable: true,
+        value,
+      }
+    }
+    return undefined
+  },
+}) as NextAuthOptions

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
+  // Middleware simples - apenas passa a requisição adiante
+  // Não usa Prisma, NextAuth ou qualquer outra dependência pesada
+  // para evitar problemas no Edge Runtime
   return NextResponse.next()
 }
 
