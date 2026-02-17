@@ -110,5 +110,18 @@ export function getAuthOptions(): NextAuthOptions {
   }
 }
 
-// Export para compatibilidade
-export const authOptions = getAuthOptions()
+// Export lazy para compatibilidade - só executa quando realmente necessário
+let _authOptions: NextAuthOptions | null = null
+export function getAuthOptionsLazy(): NextAuthOptions {
+  if (!_authOptions) {
+    _authOptions = getAuthOptions()
+  }
+  return _authOptions
+}
+
+// Export para compatibilidade (mas lazy)
+export const authOptions = new Proxy({} as NextAuthOptions, {
+  get(target, prop) {
+    return getAuthOptionsLazy()[prop as keyof NextAuthOptions]
+  }
+})
