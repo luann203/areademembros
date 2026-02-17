@@ -3,7 +3,27 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 
 // Lazy load prisma para evitar inicialização durante build
+// Só importa quando realmente necessário (em runtime, não durante build)
 function getPrisma() {
+  // Verificar se estamos em build time antes de importar
+  if (process.env.NEXT_PHASE === 'phase-production-build' || 
+      process.env.NEXT_PHASE === 'phase-development-build') {
+    // Durante build, retornar um objeto mock que não faz nada
+    return {
+      user: {
+        findUnique: () => Promise.resolve(null),
+        create: () => Promise.resolve({ id: '', email: '', name: '', role: '' }),
+      },
+      course: {
+        findFirst: () => Promise.resolve(null),
+      },
+      enrollment: {
+        create: () => Promise.resolve({}),
+      },
+    } as any
+  }
+  
+  // Em runtime, importar o Prisma real
   const { prisma } = require('./prisma')
   return prisma
 }
