@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Mail, Lock, Loader2 } from 'lucide-react'
 
-export default function LoginPage() {
-  const router = useRouter()
+function LoginForm() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Mostrar erro vindo da URL (ex: /login?error=CredentialsSignin)
+  useEffect(() => {
+    const err = searchParams.get('error')
+    if (err) {
+      setError('Invalid email or password')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,32 +26,15 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const result = await signIn('credentials', {
+      // redirect: true = NextAuth redireciona automaticamente para /dashboard após sucesso
+      await signIn('credentials', {
         email: email.trim(),
         password: password.trim(),
-        redirect: false,
+        redirect: true,
         callbackUrl: '/dashboard',
       })
-
-      console.log('Sign in result:', result)
-
-      // Se houver erro explícito, mostrar mensagem
-      if (result?.error) {
-        console.error('Sign in error:', result.error)
-        setError('Invalid email or password')
-        setLoading(false)
-        return
-      }
-
-      // Se não houver erro, considerar sucesso e redirecionar
-      // Isso cobre os casos: result?.ok === true ou result === undefined ou result === null
-      console.log('Login successful (no error), redirecting to dashboard...')
-      
-      // Aguardar um pouco para garantir que a sessão foi criada
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Redirecionar usando window.location para garantir
-      window.location.href = '/dashboard'
+      // Se chegou aqui sem redirecionar, pode ter dado erro
+      setLoading(false)
     } catch (err) {
       console.error('Login exception:', err)
       setError('Login error. Please try again.')
@@ -127,5 +118,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-600" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
