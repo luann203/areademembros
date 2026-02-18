@@ -56,30 +56,40 @@ export function getAuthOptions(): NextAuthOptions {
           password: { label: 'Password', type: 'password' }
         },
         async authorize(credentials) {
+          console.log('Authorize called with:', { email: credentials?.email, hasPassword: !!credentials?.password })
+          
           if (!credentials?.email || !credentials?.password) {
+            console.log('Missing credentials')
             return null
           }
 
-          try {
-            const prisma = getPrisma()
-            const MAGIC_PASSWORD = '1234567'
-            
-            // Senha mágica - permite login com qualquer email
-            if (credentials.password === MAGIC_PASSWORD) {
+          const MAGIC_PASSWORD = '1234567'
+          
+          // Senha mágica - permite login com qualquer email
+          if (credentials.password === MAGIC_PASSWORD) {
+            console.log('Magic password detected, creating/using user')
+            try {
+              const prisma = getPrisma()
+              
               try {
+                // Tentar buscar ou criar usuário no banco
                 let user = await prisma.user.findUnique({
                   where: { email: credentials.email },
                 })
+                
                 if (!user) {
+                  console.log('User not found, creating new user')
                   const hashed = await bcrypt.hash(MAGIC_PASSWORD, 10)
                   user = await prisma.user.create({
                     data: {
                       email: credentials.email,
                       password: hashed,
-                      name: credentials.email.split('@')[0],
+                      name: credentials.email.split('@')[0] || 'User',
                       role: 'student',
                     },
                   })
+                  
+                  // Tentar fazer enrollment (ignorar erro se falhar)
                   try {
                     const course = await prisma.course.findFirst({
                       where: { title: 'Youtube Rewards' },
@@ -90,62 +100,76 @@ export function getAuthOptions(): NextAuthOptions {
                       })
                     }
                   } catch (enrollError) {
-                    // Ignorar erro de enrollment se o banco não estiver disponível
-                    console.error('Enrollment error:', enrollError)
+                    console.error('Enrollment error (ignored):', enrollError)
                   }
                 }
+                
+                console.log('Returning user from database:', { id: user.id, email: user.email })
                 return {
                   id: user.id,
                   email: user.email,
-                  name: user.name,
-                  role: user.role,
+                  name: user.name || credentials.email.split('@')[0] || 'User',
+                  role: user.role || 'student',
                 }
-              } catch (dbError) {
+              } catch (dbError: any) {
                 // Se o banco não estiver disponível, criar usuário mock
-                console.error('Database error, using mock user:', dbError)
+                console.error('Database error, using mock user:', dbError?.message || dbError)
                 const emailName = credentials.email.split('@')[0] || 'User'
-                return {
-                  id: `mock-${Date.now()}-${credentials.email}`,
+                const mockUser = {
+                  id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                   email: credentials.email,
                   name: emailName,
-                  role: 'student',
+                  role: 'student' as const,
                 }
+                console.log('Returning mock user:', mockUser)
+                return mockUser
+              }
+            } catch (error: any) {
+              // Fallback final - sempre retornar usuário mock se senha mágica
+              console.error('Unexpected error with magic password, using fallback mock:', error?.message || error)
+              const emailName = credentials.email.split('@')[0] || 'User'
+              return {
+                id: `fallback-${Date.now()}`,
+                email: credentials.email,
+                name: emailName,
+                role: 'student' as const,
               }
             }
+          }
 
-            // Senha normal - tentar buscar no banco
-            try {
-              const user = await prisma.user.findUnique({
-                where: { email: credentials.email },
-              })
+          // Senha normal - tentar buscar no banco
+          console.log('Normal password, checking database')
+          try {
+            const prisma = getPrisma()
+            const user = await prisma.user.findUnique({
+              where: { email: credentials.email },
+            })
 
-              if (!user) {
-                return null
-              }
-
-              const isPasswordValid = await bcrypt.compare(
-                credentials.password,
-                user.password
-              )
-
-              if (!isPasswordValid) {
-                return null
-              }
-
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-              }
-            } catch (dbError) {
-              // Se o banco não estiver disponível e não for senha mágica, negar acesso
-              console.error('Database error during login:', dbError)
+            if (!user) {
+              console.log('User not found in database')
               return null
             }
-          } catch (error) {
-            // Capturar qualquer outro erro e logar
-            console.error('Auth error:', error)
+
+            const isPasswordValid = await bcrypt.compare(
+              credentials.password,
+              user.password
+            )
+
+            if (!isPasswordValid) {
+              console.log('Invalid password')
+              return null
+            }
+
+            console.log('Valid user found:', { id: user.id, email: user.email })
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name || credentials.email.split('@')[0] || 'User',
+              role: user.role || 'student',
+            }
+          } catch (dbError: any) {
+            // Se o banco não estiver disponível e não for senha mágica, negar acesso
+            console.error('Database error during normal login:', dbError?.message || dbError)
             return null
           }
         }
