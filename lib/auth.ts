@@ -59,8 +59,7 @@ export function getAuthOptions(): NextAuthOptions {
           console.log('Authorize called with:', { 
             email: credentials?.email, 
             hasPassword: !!credentials?.password,
-            passwordLength: credentials?.password?.length,
-            passwordValue: credentials?.password // Log da senha para debug (remover em produção)
+            passwordLength: credentials?.password?.length
           })
           
           if (!credentials?.email || !credentials?.password) {
@@ -73,12 +72,13 @@ export function getAuthOptions(): NextAuthOptions {
           // Verificar se a senha corresponde (trim para remover espaços)
           const passwordMatch = credentials.password.trim() === MAGIC_PASSWORD
           console.log('Password check:', { 
-            provided: credentials.password.trim(), 
-            expected: MAGIC_PASSWORD, 
+            providedLength: credentials.password.trim().length, 
+            expectedLength: MAGIC_PASSWORD.length, 
             match: passwordMatch 
           })
           
           // Senha mágica - permite login com qualquer email
+          // SEMPRE retornar usuário válido quando senha mágica for usada
           if (passwordMatch) {
             console.log('Magic password detected, creating/using user')
             try {
@@ -126,6 +126,7 @@ export function getAuthOptions(): NextAuthOptions {
                 }
               } catch (dbError: any) {
                 // Se o banco não estiver disponível, criar usuário mock
+                // GARANTIR que sempre retorne um usuário válido quando senha mágica for usada
                 console.error('Database error, using mock user:', dbError?.message || dbError)
                 const emailName = credentials.email.split('@')[0] || 'User'
                 const mockUser = {
@@ -134,19 +135,22 @@ export function getAuthOptions(): NextAuthOptions {
                   name: emailName,
                   role: 'student' as const,
                 }
-                console.log('Returning mock user:', mockUser)
+                console.log('Returning mock user (database unavailable):', mockUser)
                 return mockUser
               }
             } catch (error: any) {
-              // Fallback final - sempre retornar usuário mock se senha mágica
+              // Fallback final - SEMPRE retornar usuário válido se senha mágica for usada
+              // Nunca retornar null quando senha mágica for detectada
               console.error('Unexpected error with magic password, using fallback mock:', error?.message || error)
               const emailName = credentials.email.split('@')[0] || 'User'
-              return {
-                id: `fallback-${Date.now()}`,
+              const fallbackUser = {
+                id: `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 email: credentials.email,
                 name: emailName,
                 role: 'student' as const,
               }
+              console.log('Returning fallback user (guaranteed):', fallbackUser)
+              return fallbackUser
             }
           }
 

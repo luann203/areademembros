@@ -19,28 +19,31 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
         redirect: false,
         callbackUrl: '/dashboard',
       })
 
       console.log('Sign in result:', result)
 
+      // Se houver erro explícito, mostrar mensagem
       if (result?.error) {
         console.error('Sign in error:', result.error)
         setError('Invalid email or password')
         setLoading(false)
-      } else if (result?.ok) {
-        // Login bem-sucedido - redirecionar
-        console.log('Login successful, redirecting...')
-        // Usar window.location para garantir redirecionamento
-        window.location.href = '/dashboard'
-      } else {
-        // Caso não tenha erro mas também não tenha ok, tentar redirecionar mesmo assim
-        console.log('No error but no ok, attempting redirect...')
-        window.location.href = '/dashboard'
+        return
       }
+
+      // Se não houver erro, considerar sucesso e redirecionar
+      // Isso cobre os casos: result?.ok === true ou result === undefined ou result === null
+      console.log('Login successful (no error), redirecting to dashboard...')
+      
+      // Aguardar um pouco para garantir que a sessão foi criada
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Redirecionar usando window.location para garantir
+      window.location.href = '/dashboard'
     } catch (err) {
       console.error('Login exception:', err)
       setError('Login error. Please try again.')
