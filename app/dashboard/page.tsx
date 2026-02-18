@@ -3,6 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import CourseCard from '@/components/CourseCard'
+import type { Course } from '@prisma/client'
+import type { Module } from '@prisma/client'
+
+type CourseWithModules = Course & {
+  modules: (Module & { lessons: Array<{ id: string; duration: number | null }> })[]
+  totalLessons: number
+  totalDuration: number
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -11,25 +19,34 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Buscar cursos que o usuário está inscrito
-  const enrollments = await prisma.enrollment.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    include: {
-      course: {
-        include: {
-          modules: {
-            include: {
-              lessons: true,
-            },
+  // Buscar cursos que o usuário está inscrito (no Vercel pode não ter banco)
+  let courses: Array<{
+    id: string
+    title: string
+    description: string
+    imageUrl: string | null
+    duration: number | null
+    modules: Array<{
+      id: string
+      lessons: Array<{ id: string; duration: number | null }>
+    }>
+  }> = []
+  try {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId: session.user.id },
+      include: {
+        course: {
+          include: {
+            modules: { include: { lessons: true } },
           },
         },
       },
-    },
-  })
-
-  const courses = enrollments.map((enrollment) => enrollment.course)
+    })
+    courses = enrollments.map((e) => e.course)
+  } catch (err) {
+    // Sem banco (ex.: Vercel) – mostrar painel com lista vazia
+    console.error('Dashboard: database unavailable', err)
+  }
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
@@ -63,7 +80,7 @@ export default async function DashboardPage() {
                   ...course,
                   totalLessons,
                   totalDuration,
-                }}
+                } as CourseWithModules}
               />
             )
           })}
