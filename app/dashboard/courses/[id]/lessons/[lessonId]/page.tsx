@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import LessonContent from '@/components/LessonContent'
+import type { LessonWithRelationsForPage } from '@/types/lesson'
 
 export default async function LessonPage({
   params,
@@ -15,21 +16,21 @@ export default async function LessonPage({
     redirect('/login')
   }
 
-  // Verificar se o usuário está inscrito no curso
-  const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId: session.user.id,
-        courseId: params.id,
+  let enrollment: Awaited<ReturnType<typeof prisma.enrollment.findUnique>> = null
+  let lesson: LessonWithRelationsForPage | null = null
+  try {
+    enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: params.id,
+        },
       },
-    },
-  })
-
-  if (!enrollment) {
-    redirect('/dashboard')
-  }
-
-  const lesson = await prisma.lesson.findUnique({
+    })
+    if (!enrollment) {
+      redirect('/dashboard')
+    }
+    lesson = await prisma.lesson.findUnique({
     where: { id: params.lessonId },
     include: {
       module: {
@@ -69,6 +70,10 @@ export default async function LessonPage({
       },
     },
   })
+  } catch (err) {
+    console.error('Lesson page: database unavailable', err)
+    redirect('/dashboard')
+  }
 
   if (!lesson || lesson.module.course.id !== params.id) {
     redirect(`/dashboard/courses/${params.id}`)

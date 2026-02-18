@@ -12,34 +12,47 @@ export default async function ClassesPage() {
     redirect('/login')
   }
 
-  const enrollments = await prisma.enrollment.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    include: {
-      course: {
-        include: {
-          modules: {
-            include: {
-              lessons: {
-                include: {
-                  progress: {
-                    where: {
-                      userId: session.user.id,
-                    },
+  let courses: Array<{
+    id: string
+    title: string
+    description: string
+    modules: Array<{
+      id: string
+      title: string
+      description: string | null
+      lessons: Array<{
+        id: string
+        title: string
+        duration: number | null
+        progress: Array<{ completed: boolean; progress: number }>
+      }>
+    }>
+  }> = []
+  try {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId: session.user.id },
+      include: {
+        course: {
+          include: {
+            modules: {
+              include: {
+                lessons: {
+                  include: {
+                    progress: { where: { userId: session.user.id } },
                   },
+                  orderBy: { order: 'asc' },
                 },
-                orderBy: { order: 'asc' },
               },
+              orderBy: { order: 'asc' },
             },
-            orderBy: { order: 'asc' },
           },
         },
       },
-    },
-  })
-
-  const courses = enrollments.map((enrollment) => enrollment.course)
+    })
+    courses = enrollments.map((e) => e.course)
+  } catch (err) {
+    console.error('Courses page: database unavailable', err)
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">

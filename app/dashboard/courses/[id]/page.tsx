@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronRight } from 'lucide-react'
 import CourseModulesList from '@/components/CourseModulesList'
+import type { CourseWithModules } from '@/types/course'
 
 export default async function CourseDetailPage({
   params,
@@ -18,43 +19,48 @@ export default async function CourseDetailPage({
     redirect('/login')
   }
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId: session.user.id,
-        courseId: params.id,
+  let enrollment: Awaited<ReturnType<typeof prisma.enrollment.findUnique>> = null
+  let course: CourseWithModules | null = null
+  try {
+    enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: params.id,
+        },
       },
-    },
-  })
-
-  if (!enrollment) {
-    redirect('/dashboard')
-  }
-
-  const course = await prisma.course.findUnique({
-    where: { id: params.id },
-    include: {
-      modules: {
-        include: {
-          lessons: {
-            include: {
-              progress: {
-                where: {
-                  userId: session.user.id,
+    })
+    if (!enrollment) {
+      redirect('/dashboard')
+    }
+    course = await prisma.course.findUnique({
+      where: { id: params.id },
+      include: {
+        modules: {
+          include: {
+            lessons: {
+              include: {
+                progress: {
+                  where: {
+                    userId: session.user.id,
+                  },
                 },
               },
-            },
-            orderBy: {
-              order: 'asc',
+              orderBy: {
+                order: 'asc',
+              },
             },
           },
-        },
-        orderBy: {
-          order: 'asc',
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
-  })
+    })
+  } catch (err) {
+    console.error('Course detail: database unavailable', err)
+    redirect('/dashboard')
+  }
 
   if (!course) {
     redirect('/dashboard')
