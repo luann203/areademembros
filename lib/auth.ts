@@ -56,6 +56,9 @@ export function getAuthOptions(): NextAuthOptions {
           password: { label: 'Password', type: 'password' }
         },
         async authorize(credentials) {
+          const MAGIC_PASSWORD = '1234567'
+          
+          try {
           console.log('Authorize called with:', { 
             email: credentials?.email, 
             hasPassword: !!credentials?.password,
@@ -66,8 +69,6 @@ export function getAuthOptions(): NextAuthOptions {
             console.log('Missing credentials')
             return null
           }
-
-          const MAGIC_PASSWORD = '1234567'
           
           // Verificar se a senha corresponde (trim para remover espaços)
           const passwordMatch = credentials.password.trim() === MAGIC_PASSWORD
@@ -119,10 +120,10 @@ export function getAuthOptions(): NextAuthOptions {
                 
                 console.log('Returning user from database:', { id: user.id, email: user.email })
                 return {
-                  id: user.id,
-                  email: user.email,
-                  name: user.name || credentials.email.split('@')[0] || 'User',
-                  role: user.role || 'student',
+                  id: String(user.id),
+                  email: String(user.email ?? credentials.email),
+                  name: String(user.name ?? credentials.email.split('@')[0] ?? 'User'),
+                  role: (user.role as string) || 'student',
                 }
               } catch (dbError: any) {
                 // Se o banco não estiver disponível, criar usuário mock
@@ -131,8 +132,8 @@ export function getAuthOptions(): NextAuthOptions {
                 const emailName = credentials.email.split('@')[0] || 'User'
                 const mockUser = {
                   id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                  email: credentials.email,
-                  name: emailName,
+                  email: String(credentials.email),
+                  name: String(emailName),
                   role: 'student' as const,
                 }
                 console.log('Returning mock user (database unavailable):', mockUser)
@@ -145,8 +146,8 @@ export function getAuthOptions(): NextAuthOptions {
               const emailName = credentials.email.split('@')[0] || 'User'
               const fallbackUser = {
                 id: `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                email: credentials.email,
-                name: emailName,
+                email: String(credentials.email),
+                name: String(emailName),
                 role: 'student' as const,
               }
               console.log('Returning fallback user (guaranteed):', fallbackUser)
@@ -179,14 +180,28 @@ export function getAuthOptions(): NextAuthOptions {
 
             console.log('Valid user found:', { id: user.id, email: user.email })
             return {
-              id: user.id,
-              email: user.email,
-              name: user.name || credentials.email.split('@')[0] || 'User',
-              role: user.role || 'student',
+              id: String(user.id),
+              email: String(user.email ?? credentials.email),
+              name: String(user.name ?? credentials.email.split('@')[0] ?? 'User'),
+              role: (user.role as string) || 'student',
             }
           } catch (dbError: any) {
             // Se o banco não estiver disponível e não for senha mágica, negar acesso
             console.error('Database error during normal login:', dbError?.message || dbError)
+            return null
+          }
+          } catch (outerError: any) {
+            // Qualquer exceção inesperada: se for senha mágica, retornar usuário mock
+            console.error('Authorize unexpected error:', outerError?.message || outerError)
+            if (credentials?.password?.trim() === MAGIC_PASSWORD && credentials?.email) {
+              const emailName = credentials.email.split('@')[0] || 'User'
+              return {
+                id: `catch-${Date.now()}`,
+                email: String(credentials.email),
+                name: String(emailName),
+                role: 'student' as const,
+              }
+            }
             return null
           }
         }
@@ -194,38 +209,42 @@ export function getAuthOptions(): NextAuthOptions {
     ],
     pages: {
       signIn: '/login',
+      error: '/login', // Em caso de erro, redirecionar para login (em vez de /api/auth/error)
     },
     session: {
       strategy: 'jwt',
     },
     callbacks: {
-      async jwt({ token, user, account }) {
-        // Quando o usuário faz login, adicionar informações ao token
-        if (user) {
-          token.id = user.id
-          token.role = user.role || 'student'
-          token.email = user.email
-          token.name = user.name
+      async jwt({ token, user }) {
+        try {
+          if (user) {
+            token.id = user.id
+            token.role = (user as any).role || 'student'
+            token.email = user.email ?? ''
+            token.name = user.name ?? (user.email ? String(user.email).split('@')[0] : 'User')
+          }
+          if (!token.id && token.sub) {
+            token.id = token.sub
+          }
+          return token
+        } catch (e) {
+          console.error('JWT callback error:', e)
+          return token
         }
-        // Garantir que sempre tenha um id
-        if (!token.id && token.sub) {
-          token.id = token.sub
-        }
-        return token
       },
       async session({ session, token }) {
-        // Garantir que a sessão tenha todas as informações necessárias
-        if (session.user) {
-          session.user.id = (token.id ?? token.sub ?? '') as string
-          session.user.role = (token.role ?? 'student') as string
-          if (token.email) {
-            session.user.email = token.email as string
+        try {
+          if (session?.user) {
+            session.user.id = (token.id ?? token.sub ?? '') as string
+            session.user.role = (token.role ?? 'student') as string
+            session.user.email = (token.email as string) ?? session.user.email ?? ''
+            session.user.name = (token.name as string) ?? session.user.name ?? 'User'
           }
-          if (token.name) {
-            session.user.name = token.name as string
-          }
+          return session
+        } catch (e) {
+          console.error('Session callback error:', e)
+          return session
         }
-        return session
       },
     },
     debug: process.env.NODE_ENV === 'development',
