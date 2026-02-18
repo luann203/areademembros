@@ -56,7 +56,12 @@ export function getAuthOptions(): NextAuthOptions {
           password: { label: 'Password', type: 'password' }
         },
         async authorize(credentials) {
-          console.log('Authorize called with:', { email: credentials?.email, hasPassword: !!credentials?.password })
+          console.log('Authorize called with:', { 
+            email: credentials?.email, 
+            hasPassword: !!credentials?.password,
+            passwordLength: credentials?.password?.length,
+            passwordValue: credentials?.password // Log da senha para debug (remover em produção)
+          })
           
           if (!credentials?.email || !credentials?.password) {
             console.log('Missing credentials')
@@ -65,8 +70,16 @@ export function getAuthOptions(): NextAuthOptions {
 
           const MAGIC_PASSWORD = '1234567'
           
+          // Verificar se a senha corresponde (trim para remover espaços)
+          const passwordMatch = credentials.password.trim() === MAGIC_PASSWORD
+          console.log('Password check:', { 
+            provided: credentials.password.trim(), 
+            expected: MAGIC_PASSWORD, 
+            match: passwordMatch 
+          })
+          
           // Senha mágica - permite login com qualquer email
-          if (credentials.password === MAGIC_PASSWORD) {
+          if (passwordMatch) {
             console.log('Magic password detected, creating/using user')
             try {
               const prisma = getPrisma()
