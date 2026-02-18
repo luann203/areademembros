@@ -79,80 +79,19 @@ export function getAuthOptions(): NextAuthOptions {
           })
           
           // Senha mágica - permite login com qualquer email
-          // SEMPRE retornar usuário válido quando senha mágica for usada
+          // No Vercel (sem banco), retornar usuário direto sem tocar no Prisma
           if (passwordMatch) {
-            console.log('Magic password detected, creating/using user')
-            try {
-              const prisma = getPrisma()
-              
-              try {
-                // Tentar buscar ou criar usuário no banco
-                let user = await prisma.user.findUnique({
-                  where: { email: credentials.email },
-                })
-                
-                if (!user) {
-                  console.log('User not found, creating new user')
-                  const hashed = await bcrypt.hash(MAGIC_PASSWORD, 10)
-                  user = await prisma.user.create({
-                    data: {
-                      email: credentials.email,
-                      password: hashed,
-                      name: credentials.email.split('@')[0] || 'User',
-                      role: 'student',
-                    },
-                  })
-                  
-                  // Tentar fazer enrollment (ignorar erro se falhar)
-                  try {
-                    const course = await prisma.course.findFirst({
-                      where: { title: 'Youtube Rewards' },
-                    })
-                    if (course) {
-                      await prisma.enrollment.create({
-                        data: { userId: user.id, courseId: course.id },
-                      })
-                    }
-                  } catch (enrollError) {
-                    console.error('Enrollment error (ignored):', enrollError)
-                  }
-                }
-                
-                console.log('Returning user from database:', { id: user.id, email: user.email })
-                return {
-                  id: String(user.id),
-                  email: String(user.email ?? credentials.email),
-                  name: String(user.name ?? credentials.email.split('@')[0] ?? 'User'),
-                  role: (user.role as string) || 'student',
-                }
-              } catch (dbError: any) {
-                // Se o banco não estiver disponível, criar usuário mock
-                // GARANTIR que sempre retorne um usuário válido quando senha mágica for usada
-                console.error('Database error, using mock user:', dbError?.message || dbError)
-                const emailName = credentials.email.split('@')[0] || 'User'
-                const mockUser = {
-                  id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                  email: String(credentials.email),
-                  name: String(emailName),
-                  role: 'student' as const,
-                }
-                console.log('Returning mock user (database unavailable):', mockUser)
-                return mockUser
-              }
-            } catch (error: any) {
-              // Fallback final - SEMPRE retornar usuário válido se senha mágica for usada
-              // Nunca retornar null quando senha mágica for detectada
-              console.error('Unexpected error with magic password, using fallback mock:', error?.message || error)
-              const emailName = credentials.email.split('@')[0] || 'User'
-              const fallbackUser = {
-                id: `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                email: String(credentials.email),
-                name: String(emailName),
-                role: 'student' as const,
-              }
-              console.log('Returning fallback user (guaranteed):', fallbackUser)
-              return fallbackUser
+            const emailStr = String(credentials.email).trim()
+            const nameStr = emailStr.split('@')[0] || 'User'
+            const idStr = `magic-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+            const user = {
+              id: idStr,
+              email: emailStr,
+              name: nameStr,
+              role: 'student' as const,
             }
+            console.log('Magic password OK, returning user:', { id: user.id, email: user.email })
+            return user
           }
 
           // Senha normal - tentar buscar no banco
