@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import CourseCard from '@/components/CourseCard'
 import type { Course } from '@prisma/client'
 import type { Module } from '@prisma/client'
+import { Play } from 'lucide-react'
 
 type CourseWithModules = Course & {
   modules: (Module & { lessons: Array<{ id: string; duration: number | null }> })[]
@@ -56,8 +58,19 @@ export default async function DashboardPage() {
       </div>
 
       {courses.length === 0 ? (
-        <div className="text-center py-8 sm:py-12">
-          <p className="text-gray-500 text-base sm:text-lg">You are not enrolled in any course yet.</p>
+        <div className="space-y-6">
+          <p className="text-gray-500 text-base sm:text-lg text-center">
+            You are not enrolled in any course yet.
+          </p>
+          <div className="max-w-md mx-auto">
+            <Link
+              href="/dashboard/demo-lesson"
+              className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-xl border-2 font-semibold transition-colors text-[#6932CB] border-[#6932CB] hover:bg-[#6932CB] hover:text-white"
+            >
+              <Play className="w-5 h-5" />
+              Ver aula demonstrativa
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

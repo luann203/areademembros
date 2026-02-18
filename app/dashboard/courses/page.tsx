@@ -62,10 +62,18 @@ export default async function ClassesPage() {
       </div>
 
       {courses.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
+        <div className="space-y-6">
+          <p className="text-gray-500 text-lg text-center">
             You are not enrolled in any course yet.
           </p>
+          <div className="max-w-md mx-auto">
+            <Link
+              href="/dashboard/demo-lesson"
+              className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-xl border-2 font-semibold transition-colors text-[#6932CB] border-[#6932CB] hover:bg-[#6932CB] hover:text-white"
+            >
+              Ver aula demonstrativa
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-6 sm:space-y-8">
