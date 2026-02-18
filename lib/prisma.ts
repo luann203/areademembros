@@ -4,26 +4,51 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Detectar se estamos em build time (várias formas de detectar)
-const isBuildTime = 
+// Detectar se estamos em build time
+const isBuildTime =
   process.env.NEXT_PHASE === 'phase-production-build' ||
-  process.env.NEXT_PHASE === 'phase-development-build' ||
-  process.env.VERCEL === '1' && !process.env.VERCEL_ENV ||
-  typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL
+  process.env.NEXT_PHASE === 'phase-development-build'
+
+// No Vercel usar mock (SQLite com file: não funciona em serverless)
+const isVercel = process.env.VERCEL === '1'
+
+// Objeto com métodos que retornam vazio (para usar no Vercel sem banco)
+const mockDelegate = {
+  findMany: () => Promise.resolve([]),
+  findUnique: () => Promise.resolve(null),
+  findFirst: () => Promise.resolve(null),
+  create: () => Promise.resolve({}),
+  update: () => Promise.resolve({}),
+  delete: () => Promise.resolve({}),
+  createMany: () => Promise.resolve({ count: 0 }),
+}
+
+// Proxy que retorna resultados vazios (sem conectar ao banco)
+function createMockPrisma(): PrismaClient {
+  return new Proxy({} as PrismaClient, {
+    get(_target, prop: string) {
+      if (prop === 'constructor') return PrismaClient
+      return mockDelegate
+    },
+  }) as PrismaClient
+}
 
 // Criar Prisma Client apenas em runtime, não durante build
 function createPrismaClient(): PrismaClient {
-  // Se estiver em build time, retornar um proxy que não inicializa o cliente real
   if (isBuildTime) {
     return new Proxy({} as PrismaClient, {
-      get(target, prop) {
-        // Durante build, retornar funções vazias que não fazem nada
-        if (typeof prop === 'string' && prop !== 'constructor') {
+      get(_target, prop: string) {
+        if (prop !== 'constructor' && typeof prop === 'string') {
           return () => Promise.resolve(null)
         }
         return undefined
       }
-    })
+    }) as PrismaClient
+  }
+
+  // No Vercel usar mock (evita erro de conexão SQLite no serverless)
+  if (isVercel) {
+    return createMockPrisma()
   }
 
   return new PrismaClient({
