@@ -46,8 +46,9 @@ function createPrismaClient(): PrismaClient {
     }) as PrismaClient
   }
 
-  // No Vercel usar mock (evita erro de conexão SQLite no serverless)
-  if (isVercel) {
+  // No Vercel: usar mock só quando não houver banco (evita erro de conexão SQLite no serverless).
+  // Se DATABASE_URL estiver definido (ex.: Vercel Postgres), usar o cliente real.
+  if (isVercel && !process.env.DATABASE_URL) {
     return createMockPrisma()
   }
 
