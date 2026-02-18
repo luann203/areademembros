@@ -22,17 +22,28 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
+        callbackUrl: '/dashboard',
       })
 
+      console.log('Sign in result:', result)
+
       if (result?.error) {
+        console.error('Sign in error:', result.error)
         setError('Invalid email or password')
+        setLoading(false)
+      } else if (result?.ok) {
+        // Login bem-sucedido - redirecionar
+        console.log('Login successful, redirecting...')
+        // Usar window.location para garantir redirecionamento
+        window.location.href = '/dashboard'
       } else {
-        router.push('/dashboard')
-        router.refresh()
+        // Caso não tenha erro mas também não tenha ok, tentar redirecionar mesmo assim
+        console.log('No error but no ok, attempting redirect...')
+        window.location.href = '/dashboard'
       }
     } catch (err) {
+      console.error('Login exception:', err)
       setError('Login error. Please try again.')
-    } finally {
       setLoading(false)
     }
   }

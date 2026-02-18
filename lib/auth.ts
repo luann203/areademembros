@@ -158,34 +158,42 @@ export function getAuthOptions(): NextAuthOptions {
       strategy: 'jwt',
     },
     callbacks: {
-      async jwt({ token, user }) {
+      async jwt({ token, user, account }) {
+        // Quando o usuário faz login, adicionar informações ao token
         if (user) {
           token.id = user.id
-          token.role = user.role
+          token.role = user.role || 'student'
+          token.email = user.email
+          token.name = user.name
         }
+        // Garantir que sempre tenha um id
         if (!token.id && token.sub) {
           token.id = token.sub
         }
         return token
       },
       async session({ session, token }) {
+        // Garantir que a sessão tenha todas as informações necessárias
         if (session.user) {
-          session.user.id = (token.id ?? token.sub) as string
+          session.user.id = (token.id ?? token.sub ?? '') as string
           session.user.role = (token.role ?? 'student') as string
+          if (token.email) {
+            session.user.email = token.email as string
+          }
+          if (token.name) {
+            session.user.name = token.name as string
+          }
         }
         return session
       },
     },
     debug: process.env.NODE_ENV === 'development',
     events: {
-      async signIn({ user, account, profile }) {
+      async signIn({ user, account }) {
         console.log('Sign in event:', { user: user?.email, account: account?.provider })
       },
       async signOut() {
         console.log('Sign out event')
-      },
-      async error({ error }) {
-        console.error('NextAuth error event:', error)
       },
     },
   }
