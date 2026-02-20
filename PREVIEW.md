@@ -1,56 +1,41 @@
-# 🎯 Como Acessar no Preview
+# Como acessar no preview
 
-## ✅ Servidor está rodando!
+## Servidor rodando
 
-O servidor Next.js está iniciando. Aguarde alguns segundos até ver "✓ Ready" no terminal.
+Depois de `npm run dev`, aguarde aparecer **✓ Ready** no terminal.
 
-## 🌐 Acesse no Navegador
+## Abrir no preview (Cursor / VS Code)
 
-1. **Abra seu navegador** (Chrome, Firefox, Safari, Edge)
-2. **Digite na barra de endereço**: `http://localhost:3000`
-3. Você será redirecionado para a página de login
+1. Abra o **Simple Browser** / Preview (Command Palette → “Simple Browser: Show” ou atalho do preview).
+2. Na barra de endereço do preview, digite: **`http://localhost:3003`**
+3. Ou use a porta que aparecer no terminal (ex.: `http://localhost:3000` se for 3000).
 
-## 📍 URLs Importantes
+## URLs
 
-- **Página inicial**: `http://localhost:3000` → redireciona para login
-- **Login**: `http://localhost:3000/login`
-- **Dashboard**: `http://localhost:3000/dashboard` (após login)
+| Onde           | URL |
+|----------------|-----|
+| **Preview**    | **http://localhost:3003** |
+| Página inicial | http://localhost:3003 (redireciona para login) |
+| Login          | http://localhost:3003/login |
+| Dashboard      | http://localhost:3003/dashboard (após login) |
 
-## 🔑 Credenciais
+Se o Next.js estiver em outra porta (3000, 3001, 3002…), use essa porta no lugar de 3003.
 
-- **Aluno**: `aluno@example.com` / `aluno123`
-- **Admin**: `admin@example.com` / `admin123`
+## Credenciais
 
-## ⚠️ Se não aparecer
+- **Qualquer email** + senha: **`1234567`**  
+  Ex.: `aluno@example.com` / `1234567`
 
-### Verifique a porta:
-O servidor pode estar em outra porta. Veja no terminal qual porta está sendo usada:
-- Procure por: `- Local: http://localhost:XXXX`
+## Porta fixa (opcional)
 
-### Se estiver em outra porta:
-- Se for porta 3001: acesse `http://localhost:3001`
-- Se for porta 3002: acesse `http://localhost:3002`
+Para forçar a porta 3003:
 
-### Ou force a porta 3000:
 ```bash
-# Pare o servidor (Ctrl+C)
-# Execute:
-PORT=3000 npm run dev
+PORT=3003 npm run dev
 ```
 
-## 🆘 Problemas Comuns
-
-1. **"Cannot GET /"**: Aguarde mais alguns segundos, o servidor ainda está compilando
-2. **Página em branco**: Limpe o cache do navegador (Ctrl+Shift+R ou Cmd+Shift+R)
-3. **404 Not Found**: Verifique se o servidor está rodando e qual porta está usando
-
-## 📝 Nota sobre Preview do Cursor/VSCode
-
-Se você está usando o preview interno do Cursor/VSCode:
-- O preview pode não funcionar corretamente com Next.js
-- **Recomendação**: Use um navegador externo (Chrome, Firefox, etc.)
-- Acesse diretamente: `http://localhost:3000`
+Depois abra no preview: **http://localhost:3003**
 
 ---
 
-**Lembre-se**: O servidor precisa estar rodando (`npm run dev`) para acessar a aplicação!
+**Importante:** o servidor precisa estar rodando (`npm run dev`) para acessar a aplicação.
