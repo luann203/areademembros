@@ -30,6 +30,19 @@ export default async function CourseDetailPage({
         },
       },
     })
+    if (!enrollment && session.user.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email.toLowerCase().trim() },
+        select: { id: true },
+      })
+      if (user) {
+        enrollment = await prisma.enrollment.findUnique({
+          where: {
+            userId_courseId: { userId: user.id, courseId: params.id },
+          },
+        })
+      }
+    }
     if (!enrollment) {
       redirect('/dashboard')
     }
@@ -41,9 +54,7 @@ export default async function CourseDetailPage({
             lessons: {
               include: {
                 progress: {
-                  where: {
-                    userId: session.user.id,
-                  },
+                  where: { userId: session.user.id },
                 },
               },
               orderBy: {

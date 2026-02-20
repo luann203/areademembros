@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "postinstall": "prisma generate",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && ( [ -n \"$DATABASE_URL\" ] && prisma migrate deploy || true ) && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
+    "db:setup": "prisma migrate deploy && npm run db:seed",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",

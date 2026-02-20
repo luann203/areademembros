@@ -18,6 +18,7 @@ export default async function LessonPage({
 
   let enrollment: Awaited<ReturnType<typeof prisma.enrollment.findUnique>> = null
   let lesson: LessonWithRelationsForPage | null = null
+  let uid = session.user.id
   try {
     enrollment = await prisma.enrollment.findUnique({
       where: {
@@ -27,9 +28,23 @@ export default async function LessonPage({
         },
       },
     })
+    if (!enrollment && session.user.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email.toLowerCase().trim() },
+        select: { id: true },
+      })
+      if (user) {
+        enrollment = await prisma.enrollment.findUnique({
+          where: {
+            userId_courseId: { userId: user.id, courseId: params.id },
+          },
+        })
+      }
+    }
     if (!enrollment) {
       redirect('/dashboard')
     }
+    uid = (enrollment as { userId: string }).userId
     lesson = await prisma.lesson.findUnique({
     where: { id: params.lessonId },
     include: {
@@ -50,9 +65,7 @@ export default async function LessonPage({
         },
       },
       progress: {
-        where: {
-          userId: session.user.id,
-        },
+        where: { userId: uid },
       },
       comments: {
         include: {
@@ -94,7 +107,7 @@ export default async function LessonPage({
       courseId={params.id}
       previousLesson={previousLesson}
       nextLesson={nextLesson}
-      userId={session.user.id}
+      userId={uid}
     />
   )
 }

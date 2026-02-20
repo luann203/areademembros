@@ -2,6 +2,16 @@
 
 Plataforma de cursos online estilo Memberkit para gerenciamento de cursos e alunos.
 
+## Como acessar
+
+**No seu PC:** no terminal, na pasta do projeto, rode:
+```bash
+npm run dev
+```
+Depois abra no navegador: **http://localhost:3000**
+
+Se a porta 3000 estiver ocupada, o Next.js pode usar 3001 — veja a URL que aparecer no terminal.
+
 ## 🚀 Funcionalidades
 
 - ✅ Sistema de autenticação (login/logout)
@@ -46,9 +56,9 @@ npm run dev
 
 2. Acesse `http://localhost:3000`
 
-3. Faça login com as credenciais de exemplo:
-   - **Admin**: `admin@example.com` / `admin123`
-   - **Aluno**: `aluno@example.com` / `aluno123`
+3. Faça login:
+   - **Qualquer email** com senha **`1234567`** (acesso padrão), ou
+   - **Aluno do seed**: `aluno@example.com` / `aluno123`
 
 ## 📁 Estrutura do Projeto
 

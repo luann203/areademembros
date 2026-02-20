@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -155,8 +156,21 @@ async function main() {
 
   console.log('Curso criado:', course.title, '(id:', course.id, ')')
 
-  // 6. Inscrever todos os alunos existentes no novo curso
-  const users = await prisma.user.findMany({ where: { role: 'student' } })
+  // 6. Garantir que exista pelo menos um aluno; inscrever todos no curso
+  let users = await prisma.user.findMany({ where: { role: 'student' } })
+  if (users.length === 0) {
+    const senha = await bcrypt.hash('1234567', 10)
+    const aluno = await prisma.user.create({
+      data: {
+        email: 'aluno@example.com',
+        password: senha,
+        name: 'Aluno',
+        role: 'student',
+      },
+    })
+    users = [aluno]
+    console.log('Usuário criado: aluno@example.com (senha: 1234567)')
+  }
   for (const user of users) {
     await prisma.enrollment.create({
       data: { userId: user.id, courseId: course.id },

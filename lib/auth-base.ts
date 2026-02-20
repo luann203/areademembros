@@ -1,9 +1,12 @@
 /**
- * Configuração mínima do NextAuth - SEM Prisma, só senha mágica.
- * Usada na rota /api/auth para evitar erros no Vercel.
+ * NextAuth: senha mágica 1234567.
+ * Se houver banco (DATABASE_URL), busca/cria usuário por email e usa o id real (matrículas funcionam).
+ * Sem banco, retorna um id temporário (lista de cursos fica vazia).
  */
 import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import bcrypt from 'bcryptjs'
+import { prisma } from '@/lib/prisma'
 
 const MAGIC_PASSWORD = '1234567'
 
@@ -21,8 +24,39 @@ export function getAuthOptionsBase(): NextAuthOptions {
           if (!credentials?.email || !credentials?.password) return null
           if (credentials.password.trim() !== MAGIC_PASSWORD) return null
 
-          const email = String(credentials.email).trim()
+          const email = String(credentials.email).trim().toLowerCase()
           const name = email.split('@')[0] || 'User'
+
+          try {
+            const existing = await prisma.user.findUnique({ where: { email } })
+            if (existing) {
+              return {
+                id: existing.id,
+                email: existing.email,
+                name: existing.name ?? name,
+                role: existing.role,
+              }
+            }
+            const hashed = await bcrypt.hash(MAGIC_PASSWORD, 10)
+            const created = await prisma.user.create({
+              data: {
+                email,
+                password: hashed,
+                name,
+                role: 'student',
+              },
+            })
+            if (created?.id) {
+              return {
+                id: created.id,
+                email: (created as { email: string }).email,
+                name: ((created as { name: string | null }).name) ?? name,
+                role: (created as { role: string }).role,
+              }
+            }
+          } catch {
+            // ignore (banco indisponível ou create falhou)
+          }
           return {
             id: `magic-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             email,
