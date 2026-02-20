@@ -19,7 +19,9 @@ const mockDelegate = {
   findFirst: () => Promise.resolve(null),
   create: () => Promise.resolve({}),
   update: () => Promise.resolve({}),
+  upsert: () => Promise.resolve({}),
   delete: () => Promise.resolve({}),
+  deleteMany: () => Promise.resolve({ count: 0 }),
   createMany: () => Promise.resolve({ count: 0 }),
 }
 

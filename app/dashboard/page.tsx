@@ -20,7 +20,9 @@ export default async function ContentsPage() {
     if (byEmail) userId = byEmail.id
   }
 
-  await ensureUserEnrolledInYoutubeCourse(userId)
+  if (!userId.startsWith('magic-')) {
+    await ensureUserEnrolledInYoutubeCourse(userId)
+  }
 
   const enrollments = await prisma.enrollment.findMany({
     where: { userId },

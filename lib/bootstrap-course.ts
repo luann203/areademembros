@@ -98,6 +98,7 @@ export async function bootstrapCourseIfEmpty(): Promise<void> {
  * Assim o curso aparece em Contents e as aulas em Classes para qualquer login.
  */
 export async function ensureUserEnrolledInYoutubeCourse(userId: string): Promise<void> {
+  if (userId.startsWith('magic-')) return
   try {
     const course = await prisma.course.findFirst({
       where: { title: 'Youtube Rewards' },
