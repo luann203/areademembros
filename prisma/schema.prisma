@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -15,13 +16,17 @@ model User {
   email     String   @unique
   password  String
   name      String?
+  bio       String?
+  avatarUrl String?
+  timezone  String   @default("America/Sao_Paulo")
   role      String   @default("student") // student, admin
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  enrollments Enrollment[]
-  comments    Comment[]
-  progress    LessonProgress[]
+  enrollments   Enrollment[]
+  comments      Comment[]
+  progress      LessonProgress[]
+  notifications Notification[]
 }
 
 model Course {
@@ -30,11 +35,26 @@ model Course {
   description String
   imageUrl    String?
   duration    Int?     // em minutos
+  categoryId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   modules     Module[]
   enrollments Enrollment[]
+
+  @@index([categoryId])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses   Course[]
 }
 
 model Module {
@@ -110,4 +130,51 @@ model Comment {
   
   @@index([lessonId])
   @@index([userId])
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  platform    String
+  name        String
+  token       String?
+  offerId     String?
+  modality    String   @default("courses") // courses, subscription, unlimited
+  courseIds   String   @default("[]") // JSON array of course ids
+  webhookUrl  String?
+  webhookSecret String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  webhookLogs WebhookLog[]
+
+  @@index([platform])
+}
+
+model WebhookLog {
+  id            String   @id @default(cuid())
+  integrationId String?
+  integration   Integration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  platform      String
+  eventType     String?
+  payload       String   // JSON
+  status        String   @default("received") // received, processed, failed
+  createdAt     DateTime @default(now())
+
+  @@index([platform])
+  @@index([integrationId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

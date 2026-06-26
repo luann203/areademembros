@@ -26,6 +26,8 @@ Se o Next.js estiver em outra porta (3000, 3001, 3002…), use essa porta no lug
 - **Qualquer email** + senha: **`1234567`**  
   Ex.: `aluno@example.com` / `1234567`
 
+Se aparecer *"You are not enrolled in any course yet."*: faça **logout** e **login de novo** com o mesmo email e senha `1234567`. O sistema inscreve você no curso ao acessar o dashboard.
+
 ## Porta fixa (opcional)
 
 Para forçar a porta 3003:

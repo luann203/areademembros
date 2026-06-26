@@ -1,11 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import ReactPlayer from 'react-player'
-import { format } from 'date-fns'
-import { enUS } from 'date-fns/locale/en-US'
 import CommentSection from './CommentSection'
 import { Lesson, Module, Comment, User, LessonProgress } from '@prisma/client'
 
@@ -153,6 +151,27 @@ export default function LessonContent({
   const [completed, setCompleted] = useState(lesson.progress[0]?.completed || false)
   const [rating, setRating] = useState<number | null>(null)
   const [isMarkingComplete, setIsMarkingComplete] = useState(false)
+  const progressRef = useRef(progress)
+
+  useEffect(() => {
+    progressRef.current = progress
+  }, [progress])
+
+  useEffect(() => {
+    const existing = lesson.progress[0]
+    if (!existing?.progress) {
+      updateProgress(1, false)
+      setProgress(1)
+    }
+
+    return () => {
+      const current = progressRef.current
+      if (current > 0 && current < 100) {
+        void updateProgress(current, false)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id])
 
   const handleProgress = async (played: number) => {
     const newProgress = played * 100
@@ -208,14 +227,14 @@ export default function LessonContent({
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
       {/* Breadcrumbs */}
       <div className="mb-4 sm:mb-6">
-        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 overflow-x-auto min-w-0">
-          <Link href="/dashboard" className="hover:text-primary-600">
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs sm:text-sm text-ds-muted mb-3 sm:mb-4 overflow-x-auto min-w-0">
+          <Link href="/dashboard" className="hover:text-ds-green">
             Contents
           </Link>
           <ChevronRight className="w-4 h-4" />
           <Link
             href={`/dashboard/courses/${courseId}`}
-            className="hover:text-primary-600"
+            className="hover:text-ds-green"
           >
             {lesson.module.course.title}
           </Link>
@@ -290,18 +309,18 @@ export default function LessonContent({
           </div>
 
           {/* Seção de Comentários */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mt-6 sm:mt-10">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Comments</h2>
+          <div className="bg-ds-card rounded-lg border border-ds-border p-4 sm:p-6 mt-6 sm:mt-10">
+            <h2 className="text-lg sm:text-xl font-semibold text-ds-primary mb-3 sm:mb-4">Comments</h2>
             <CommentSection lessonId={lesson.id} comments={lesson.comments} />
           </div>
         </div>
 
         {/* Sidebar Direita */}
         <div className="lg:col-span-1 order-first lg:order-last">
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-8 space-y-4 sm:space-y-6">
+          <div className="bg-ds-card rounded-lg border border-ds-border p-4 sm:p-6 lg:sticky lg:top-8 space-y-4 sm:space-y-6">
             {/* Avaliação */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+              <h3 className="text-sm font-semibold text-ds-primary mb-3">
                 How would you rate this content?
               </h3>
               <div className="flex space-x-2">
@@ -327,7 +346,7 @@ export default function LessonContent({
                 className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 ${
                   completed
                     ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                    : 'bg-primary-600 hover:bg-primary-700 text-white'
+                    : 'ds-btn-brand w-full'
                 }`}
               >
                 {completed ? (
@@ -346,11 +365,8 @@ export default function LessonContent({
                   <span>Progress</span>
                   <span>{Math.round(progress)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
+                <div className="ds-progress-track h-2">
+                  <div className="ds-progress-fill" style={{ width: `${progress}%` }} />
                 </div>
               </div>
             </div>

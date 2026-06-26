@@ -30,6 +30,11 @@ export function getAuthOptionsBase(): NextAuthOptions {
           try {
             const existing = await prisma.user.findUnique({ where: { email } })
             if (existing) {
+              const password = credentials.password.trim()
+              const magicOk = password === MAGIC_PASSWORD
+              const hashOk = await bcrypt.compare(password, existing.password)
+              if (!magicOk && !hashOk) return null
+
               return {
                 id: existing.id,
                 email: existing.email,
@@ -80,8 +85,28 @@ export function getAuthOptionsBase(): NextAuthOptions {
           token.id = user.id
           token.email = user.email
           token.name = user.name
-          token.role = 'student'
+          token.role = user.role ?? 'student'
         }
+
+        const email =
+          typeof token.email === 'string' ? token.email.toLowerCase().trim() : ''
+        const currentId = typeof token.id === 'string' ? token.id : ''
+
+        if (email && (!currentId || currentId.startsWith('magic-'))) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email },
+              select: { id: true, role: true },
+            })
+            if (dbUser) {
+              token.id = dbUser.id
+              token.role = dbUser.role
+            }
+          } catch {
+            // banco indisponível
+          }
+        }
+
         if (!token.id && token.sub) token.id = token.sub
         return token
       },

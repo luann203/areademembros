@@ -2,20 +2,475 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 255, 255, 255;
+  --color-bg: #171c14;
+  --color-sidebar: #1b2118;
+  --color-surface: #222b1e;
+  --color-surface-hover: #2a3525;
+  --color-card: #1e2719;
+  --color-card-hover: #263022;
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  --color-brand: #e50914;
+  --color-green: #46d369;
+  --color-green-dim: #2a7d3f;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a8a8a8;
+  --color-text-muted: #666666;
+
+  --color-progress: #e50914;
+  --color-nav-active: rgba(255, 255, 255, 0.1);
+
+  --overlay-hero: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.3) 50%,
+    transparent 100%
+  );
+  --overlay-small: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 50%);
+  --overlay-card: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85) 0%,
+    transparent 60%
+  );
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  --font-family: 'Inter', system-ui, sans-serif;
+  --sidebar-width: 240px;
+  --main-padding: 24px 28px;
+  --card-gap: 12px;
+
+  /* Card poster — design 708×1494px, exibido em escala no carrossel */
+  --poster-design-w: 708;
+  --poster-design-h: 1494;
+  --poster-display-w: 177px;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+}
+
+@layer components {
+  .ds-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .ds-page-title {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--color-text-primary);
+  }
+
+  .ds-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .ds-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .ds-card:hover {
+    background: var(--color-card-hover);
+  }
+
+  .ds-surface {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .ds-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .ds-input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .ds-input:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .ds-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .ds-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff;
+    color: #000000;
+    border-radius: var(--radius-pill);
+    padding: 9px 22px;
+    font-weight: 700;
+    font-size: 13px;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+
+  .ds-btn-primary:hover {
+    opacity: 0.92;
+  }
+
+  .ds-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ds-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-pill);
+    padding: 9px 22px;
+    font-weight: 600;
+    font-size: 13px;
+    backdrop-filter: blur(8px);
+    transition: background 0.15s;
+  }
+
+  .ds-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .ds-btn-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--color-brand);
+    color: #ffffff;
+    border-radius: var(--radius-pill);
+    padding: 9px 22px;
+    font-weight: 700;
+    font-size: 13px;
+    transition: opacity 0.15s;
+  }
+
+  .ds-btn-brand:hover {
+    opacity: 0.9;
+  }
+
+  .ds-badge-match {
+    background: rgba(70, 211, 105, 0.13);
+    color: var(--color-green);
+    border: 1px solid rgba(70, 211, 105, 0.27);
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .ds-progress-track {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .ds-progress-fill {
+    height: 100%;
+    background: var(--color-progress);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  .ds-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    font-size: 13px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .ds-nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+  }
+
+  .ds-nav-item-active {
+    background: var(--color-nav-active);
+    color: var(--color-text-primary);
+    font-weight: 600;
+  }
+
+  .ds-sidebar-footer-link {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    transition: color 0.15s;
+  }
+
+  .ds-sidebar-footer-link:hover {
+    color: var(--color-text-secondary);
+  }
+
+  .ds-sidebar-footer-link-active {
+    color: var(--color-text-secondary);
+  }
+
+  .ds-dropdown {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+
+  .ds-page-shell {
+    padding-top: 0;
+  }
+
+  .ds-sidebar-glass {
+    background: rgba(27, 33, 24, 0.85);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid var(--color-border);
+  }
+
+  .ds-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+
+  .ds-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: 13px;
+  }
+
+  .ds-search input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .ds-nav-group-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding: 16px 14px 6px;
+  }
+
+  .ds-section-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 14px;
+    transition: color 0.15s;
+  }
+
+  .ds-section-header:hover {
+    color: #ffffff;
+  }
+
+  .ds-section-header span.arrow {
+    color: var(--color-green);
+    font-size: 12px;
+  }
+
+  .ds-poster-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .ds-poster-row-header .ds-section-header {
+    margin-bottom: 0;
+  }
+
+  .ds-carousel-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .ds-carousel-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .ds-carousel-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--color-text-primary);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .ds-carousel-btn:active {
+    transform: scale(0.94);
+  }
+
+  .ds-hero-card {
+    position: relative;
+    min-height: 280px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .ds-hero-card:hover {
+    transform: scale(1.01);
+  }
+
+  .ds-side-card {
+    position: relative;
+    min-height: 280px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .ds-side-card:hover {
+    transform: scale(1.02);
+  }
+
+  .ds-poster-item {
+    flex: 0 0 var(--poster-display-w);
+    width: var(--poster-display-w);
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --poster-display-w: 236px;
+    }
+  }
+
+  .ds-poster-card {
+    width: var(--poster-display-w);
+    aspect-ratio: 708 / 1494;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s;
+    position: relative;
+    background: var(--color-card);
+  }
+
+  .ds-poster-card:hover {
+    transform: scale(1.04);
+  }
+
+  .ds-poster-badge-fa {
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    color: #e50914;
+  }
+
+  .ds-poster-badge-course {
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .ds-poster-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.95) 0%,
+      rgba(0, 0, 0, 0.72) 28%,
+      rgba(0, 0, 0, 0.28) 52%,
+      transparent 72%
+    );
+    pointer-events: none;
+  }
+
+  .ds-poster-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ds-poster-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ds-genre-dot {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+
+  .ds-genre-dot span.sep {
+    color: var(--color-text-muted);
+    margin: 0 6px;
+  }
 }
 
 @layer utilities {

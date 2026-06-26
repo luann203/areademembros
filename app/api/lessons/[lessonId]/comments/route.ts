@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolveUserId } from '@/lib/resolve-user-id'
 
 export async function POST(
   request: NextRequest,
@@ -10,20 +11,21 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userId = await resolveUserId(session)
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { content } = await request.json()
 
     if (!content || !content.trim()) {
-      return NextResponse.json(
-        { error: 'Comment content is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Comment content is required' }, { status: 400 })
     }
 
-    // Verificar se a aula existe
     const lesson = await prisma.lesson.findUnique({
       where: { id: params.lessonId },
     })
@@ -32,11 +34,10 @@ export async function POST(
       return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
     }
 
-    // Criar comentário
     const comment = await prisma.comment.create({
       data: {
         content: content.trim(),
-        userId: session.user.id,
+        userId,
         lessonId: params.lessonId,
       },
       include: {
@@ -53,21 +54,23 @@ export async function POST(
     return NextResponse.json(comment, { status: 201 })
   } catch (error) {
     console.error('Erro ao criar comentário:', error)
-      return NextResponse.json(
-      { error: 'Error creating comment' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error creating comment' }, { status: 500 })
   }
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { lessonId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userId = await resolveUserId(session)
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -92,9 +95,6 @@ export async function GET(
     return NextResponse.json(comments)
   } catch (error) {
     console.error('Erro ao buscar comentários:', error)
-    return NextResponse.json(
-      { error: 'Erro ao buscar comentários' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro ao buscar comentários' }, { status: 500 })
   }
 }

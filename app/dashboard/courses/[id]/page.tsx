@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolveUserId } from '@/lib/resolve-user-id'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronRight } from 'lucide-react'
@@ -19,33 +20,26 @@ export default async function CourseDetailPage({
     redirect('/login')
   }
 
-  let enrollment: Awaited<ReturnType<typeof prisma.enrollment.findUnique>> = null
+  const userId = await resolveUserId(session)
+  if (!userId) {
+    redirect('/login')
+  }
+
   let course: CourseWithModules | null = null
   try {
-    enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
-          userId: session.user.id,
+          userId,
           courseId: params.id,
         },
       },
     })
-    if (!enrollment && session.user.email) {
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email.toLowerCase().trim() },
-        select: { id: true },
-      })
-      if (user) {
-        enrollment = await prisma.enrollment.findUnique({
-          where: {
-            userId_courseId: { userId: user.id, courseId: params.id },
-          },
-        })
-      }
-    }
+
     if (!enrollment) {
       redirect('/dashboard')
     }
+
     course = await prisma.course.findUnique({
       where: { id: params.id },
       include: {
@@ -54,7 +48,7 @@ export default async function CourseDetailPage({
             lessons: {
               include: {
                 progress: {
-                  where: { userId: session.user.id },
+                  where: { userId },
                 },
               },
               orderBy: {
@@ -112,21 +106,18 @@ export default async function CourseDetailPage({
   const firstLessonId = allLessons[0]?.id
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 overflow-x-auto min-w-0">
-        <Link href="/dashboard" className="hover:text-primary-600 shrink-0">
+    <div className="max-w-6xl ds-page-shell">
+      <div className="flex items-center gap-2 text-xs sm:text-sm text-ds-muted mb-4 sm:mb-6 overflow-x-auto min-w-0">
+        <Link href="/dashboard" className="hover:text-ds-green shrink-0">
           Contents
         </Link>
         <ChevronRight className="w-4 h-4 shrink-0" />
         <span className="truncate">{course.title}</span>
       </div>
 
-      {/* Two columns: course card | modules */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-        {/* Left: course summary card */}
         <div className="lg:col-span-1 order-2 lg:order-1">
-          <div className="w-full max-w-[430px] lg:max-w-none mx-auto bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm lg:sticky lg:top-6">
+          <div className="w-full max-w-[430px] lg:max-w-none mx-auto ds-card overflow-hidden lg:sticky lg:top-6">
             {course.imageUrl && (
               <div className="relative w-full bg-gray-100" style={{ aspectRatio: '430 / 215' }}>
                 <Image
@@ -139,46 +130,41 @@ export default async function CourseDetailPage({
               </div>
             )}
             <div className="p-4 sm:p-6 box-border">
-            <h2 className="text-lg sm:text-xl font-bold text-[#212529] mb-2 sm:mb-3">
+            <h2 className="text-lg sm:text-xl font-extrabold text-ds-primary mb-2 sm:mb-3 tracking-wide">
               {course.title}
             </h2>
-            <p className="text-gray-600 text-sm leading-relaxed mb-4">
+            <p className="text-ds-secondary text-sm leading-relaxed mb-4">
               {course.description}
             </p>
-            <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-              <span>{formatTotalDuration(totalMinutes)}</span>
-              <span>{allLessons.length} contents</span>
-            </div>
-            <div className="mb-4">
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>Progress</span>
-                <span>{courseProgress}%</span>
+            <div className="flex items-center gap-4 text-sm text-ds-muted mb-4">
+                <span>{formatTotalDuration(totalMinutes)}</span>
+                <span>{allLessons.length} contents</span>
               </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${courseProgress}%`, backgroundColor: '#6932CB' }}
-                />
+              <div className="mb-4">
+              <div className="flex justify-between text-xs text-ds-muted mb-1">
+                <span>Progress</span>
+                <span className="text-ds-green font-semibold">{courseProgress}%</span>
+              </div>
+              <div className="ds-progress-track h-2 mb-4">
+                <div className="ds-progress-fill" style={{ width: `${courseProgress}%` }} />
               </div>
             </div>
             {firstLessonId ? (
               <Link
                 href={`/dashboard/courses/${course.id}/lessons/${firstLessonId}`}
-                className="block w-full text-center py-3 px-4 border-2 rounded-lg font-semibold transition-colors bg-white hover:bg-gray-50"
-                style={{ borderColor: '#6932CB', color: '#6932CB' }}
+                className="ds-btn-primary w-full"
               >
-                start now
+                Start now
               </Link>
             ) : (
-              <span className="block w-full text-center py-3 px-4 border border-gray-300 text-gray-400 font-semibold rounded-lg cursor-not-allowed">
-                start now
+              <span className="ds-btn-secondary w-full opacity-50 cursor-not-allowed">
+                Start now
               </span>
             )}
             </div>
           </div>
         </div>
 
-        {/* Right: modules and lessons */}
         <div className="lg:col-span-2 order-1 lg:order-2">
           <CourseModulesList courseId={course.id} modules={modulesForClient} />
         </div>

@@ -3,7 +3,10 @@ import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { bootstrapCourseIfEmpty, ensureUserEnrolledInYoutubeCourse } from '@/lib/bootstrap-course'
+import { bootstrapCourseIfEmpty, bootstrapCatalogCoursesIfMissing, ensureUserEnrolledInAllCourses } from '@/lib/bootstrap-course'
+import { resolveUserId } from '@/lib/resolve-user-id'
+import { buildStreamingCourse, sortByNewest } from '@/lib/streaming-courses'
+import CoursePosterRow from '@/components/CoursePosterRow'
 import CourseModulesList from '@/components/CourseModulesList'
 
 export default async function ClassesPage() {
@@ -11,60 +14,92 @@ export default async function ClassesPage() {
   if (!session) redirect('/login')
 
   await bootstrapCourseIfEmpty()
+  await bootstrapCatalogCoursesIfMissing()
 
-  let userId = session.user.id
-  if (session.user.email) {
-    const byEmail = await prisma.user.findUnique({
-      where: { email: session.user.email.toLowerCase().trim() },
-      select: { id: true },
-    })
-    if (byEmail) userId = byEmail.id
+  const userId = await resolveUserId(session)
+
+  if (userId) {
+    await ensureUserEnrolledInAllCourses(userId)
   }
 
-  if (!userId.startsWith('magic-')) {
-    await ensureUserEnrolledInYoutubeCourse(userId)
-  }
-
-  const enrollments = await prisma.enrollment.findMany({
-    where: { userId },
-    include: {
-      course: {
+  let enrollments = userId
+    ? await prisma.enrollment.findMany({
+        where: { userId },
         include: {
-          modules: {
-            orderBy: { order: 'asc' },
+          course: {
             include: {
-              lessons: {
+              modules: {
                 orderBy: { order: 'asc' },
                 include: {
-                  progress: { where: { userId }, select: { completed: true, progress: true } },
+                  lessons: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                      progress: {
+                        where: { userId },
+                        select: { completed: true, progress: true, updatedAt: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+    : []
+
+  if (enrollments.length === 0 && userId) {
+    await ensureUserEnrolledInAllCourses(userId)
+    enrollments = await prisma.enrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          include: {
+            modules: {
+              orderBy: { order: 'asc' },
+              include: {
+                lessons: {
+                  orderBy: { order: 'asc' },
+                  include: {
+                    progress: {
+                      where: { userId },
+                      select: { completed: true, progress: true, updatedAt: true },
+                    },
+                  },
                 },
               },
             },
           },
         },
       },
-    },
-  })
+    })
+  }
 
   const courses = enrollments.map((e) => e.course)
+  const streamingCourses = sortByNewest(courses.map((course) => buildStreamingCourse(course)))
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="ds-page-shell">
       <header className="mb-6 md:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#212529] mb-1 md:mb-2">
-          Classes
-        </h1>
-        <p className="text-gray-600 text-sm sm:text-base">
+        <p className="ds-label mb-2">Prohub.</p>
+        <h1 className="ds-page-title text-2xl sm:text-3xl mb-1">Classes</h1>
+        <p className="text-ds-secondary text-sm sm:text-base">
           All your lessons in one place
         </p>
       </header>
 
+      {streamingCourses.length > 0 && (
+        <div className="mb-10">
+          <CoursePosterRow title="All Courses" courses={streamingCourses} />
+        </div>
+      )}
+
       {courses.length === 0 ? (
-        <p className="text-center py-12 text-gray-500 text-lg">
+        <p className="text-center py-12 text-ds-muted text-lg">
           You are not enrolled in any course yet.
         </p>
       ) : (
-        <ul className="space-y-6 sm:space-y-8 list-none p-0 m-0">
+        <ul className="space-y-6 list-none p-0 m-0 max-w-6xl">
           {courses.map((course) => {
             const allLessons = course.modules.flatMap((m) => m.lessons)
             const completed = allLessons.filter((l) =>
@@ -98,38 +133,35 @@ export default async function ClassesPage() {
             return (
               <li key={course.id} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 <aside className="lg:col-span-1 order-2 lg:order-1">
-                  <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
-                    <h2 className="text-xl font-bold text-[#212529] mb-3">
+                  <div className="ds-card p-4 sm:p-6">
+                    <h2 className="text-xl font-extrabold text-ds-primary mb-3 tracking-wide">
                       {course.title}
                     </h2>
-                    <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                    <p className="text-ds-secondary text-sm leading-relaxed mb-4">
                       {course.description}
                     </p>
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-sm text-ds-muted mb-4">
                       {formatTime(totalMin)} · {allLessons.length} contents
                     </p>
                     <div className="mb-4">
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex justify-between text-xs text-ds-muted mb-1">
                         <span>Progress</span>
-                        <span>{progressPct}%</span>
+                        <span className="text-ds-green font-semibold">{progressPct}%</span>
                       </div>
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-[#6932CB] transition-all"
-                          style={{ width: `${progressPct}%` }}
-                        />
+                      <div className="ds-progress-track h-2">
+                        <div className="ds-progress-fill" style={{ width: `${progressPct}%` }} />
                       </div>
                     </div>
                     {firstId ? (
                       <Link
                         href={`/dashboard/courses/${course.id}/lessons/${firstId}`}
-                        className="block w-full text-center py-3 px-4 border-2 rounded-lg font-semibold border-[#6932CB] text-[#6932CB] hover:bg-[#6932CB] hover:text-white transition-colors"
+                        className="ds-btn-primary w-full"
                       >
-                        start now
+                        Start now
                       </Link>
                     ) : (
-                      <span className="block w-full text-center py-3 px-4 border border-gray-300 text-gray-400 font-semibold rounded-lg">
-                        start now
+                      <span className="ds-btn-secondary w-full opacity-50 cursor-not-allowed">
+                        Start now
                       </span>
                     )}
                   </div>

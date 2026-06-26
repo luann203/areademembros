@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { formatDistanceToNow } from 'date-fns'
-import { enUS } from 'date-fns/locale/en-US'
+import { formatDistanceToNow } from '@/lib/format-date'
 import { Send, User } from 'lucide-react'
 import { Comment, User as UserType } from '@prisma/client'
 
@@ -12,7 +11,7 @@ type CommentWithUser = Comment & {
 
 function getTimeAgo(date: Date | string) {
   const d = date instanceof Date ? date : new Date(date)
-  return formatDistanceToNow(d, { addSuffix: true, locale: enUS })
+  return formatDistanceToNow(d)
 }
 
 export default function CommentSection({
@@ -56,7 +55,7 @@ export default function CommentSection({
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Write your comment..."
           rows={3}
-          className="w-full px-4 py-3 text-[14px] text-[#34495E] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
+          className="bg-ds-surface border border-ds-border"
         />
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -72,7 +71,7 @@ export default function CommentSection({
           <button
             type="submit"
             disabled={!newComment.trim() || isSubmitting}
-            className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ds-btn-brand"
           >
             <Send className="w-4 h-4" />
             <span>Post</span>
@@ -83,7 +82,7 @@ export default function CommentSection({
       {/* Lista de Comentários - estilo Facebook */}
       <div className="divide-y divide-gray-200">
         {sortedComments.length === 0 ? (
-          <p className="text-gray-500 text-center py-8 text-[14px]">
+          <p className="text-ds-muted text-center py-8 text-[14px]">
             No comments yet. Be the first to comment!
           </p>
         ) : (
@@ -94,7 +93,7 @@ export default function CommentSection({
                   className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
                   style={{ backgroundColor: '#E4E6EB' }}
                 >
-                  <User className="w-5 h-5 text-gray-500" strokeWidth={2} />
+                  <User className="w-5 h-5 text-ds-muted" strokeWidth={2} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-0.5">

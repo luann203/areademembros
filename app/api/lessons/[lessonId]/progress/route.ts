@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolveUserId } from '@/lib/resolve-user-id'
 
 export async function POST(
   request: NextRequest,
@@ -10,7 +11,12 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userId = await resolveUserId(session)
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -23,7 +29,6 @@ export async function POST(
       )
     }
 
-    // Verificar se a aula existe
     const lesson = await prisma.lesson.findUnique({
       where: { id: params.lessonId },
     })
@@ -32,11 +37,10 @@ export async function POST(
       return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
     }
 
-    // Criar ou atualizar progresso
     const lessonProgress = await prisma.lessonProgress.upsert({
       where: {
         userId_lessonId: {
-          userId: session.user.id,
+          userId,
           lessonId: params.lessonId,
         },
       },
@@ -45,7 +49,7 @@ export async function POST(
         completed: completed === true,
       },
       create: {
-        userId: session.user.id,
+        userId,
         lessonId: params.lessonId,
         progress: Math.min(100, Math.max(0, progress)),
         completed: completed === true,
@@ -55,9 +59,6 @@ export async function POST(
     return NextResponse.json(lessonProgress)
   } catch (error) {
     console.error('Erro ao atualizar progresso:', error)
-      return NextResponse.json(
-      { error: 'Error updating progress' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error updating progress' }, { status: 500 })
   }
 }

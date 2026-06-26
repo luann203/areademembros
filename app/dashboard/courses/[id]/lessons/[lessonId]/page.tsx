@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolveUserId } from '@/lib/resolve-user-id'
 import LessonContent from '@/components/LessonContent'
 import type { LessonWithRelationsForPage } from '@/types/lesson'
 
@@ -16,73 +17,64 @@ export default async function LessonPage({
     redirect('/login')
   }
 
-  let enrollment: Awaited<ReturnType<typeof prisma.enrollment.findUnique>> = null
+  const userId = await resolveUserId(session)
+  if (!userId) {
+    redirect('/login')
+  }
+
   let lesson: LessonWithRelationsForPage | null = null
-  let uid = session.user.id
   try {
-    enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
-          userId: session.user.id,
+          userId,
           courseId: params.id,
         },
       },
     })
-    if (!enrollment && session.user.email) {
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email.toLowerCase().trim() },
-        select: { id: true },
-      })
-      if (user) {
-        enrollment = await prisma.enrollment.findUnique({
-          where: {
-            userId_courseId: { userId: user.id, courseId: params.id },
-          },
-        })
-      }
-    }
+
     if (!enrollment) {
       redirect('/dashboard')
     }
-    uid = (enrollment as { userId: string }).userId
+
     lesson = await prisma.lesson.findUnique({
-    where: { id: params.lessonId },
-    include: {
-      module: {
-        include: {
-          course: {
-            include: {
-              modules: {
-                include: {
-                  lessons: {
-                    orderBy: { order: 'asc' },
+      where: { id: params.lessonId },
+      include: {
+        module: {
+          include: {
+            course: {
+              include: {
+                modules: {
+                  include: {
+                    lessons: {
+                      orderBy: { order: 'asc' },
+                    },
                   },
+                  orderBy: { order: 'asc' },
                 },
-                orderBy: { order: 'asc' },
               },
             },
           },
         },
-      },
-      progress: {
-        where: { userId: uid },
-      },
-      comments: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+        progress: {
+          where: { userId },
+        },
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-        },
-        orderBy: {
-          createdAt: 'desc',
+          orderBy: {
+            createdAt: 'desc',
+          },
         },
       },
-    },
-  })
+    })
   } catch (err) {
     console.error('Lesson page: database unavailable', err)
     redirect('/dashboard')
@@ -92,7 +84,6 @@ export default async function LessonPage({
     redirect(`/dashboard/courses/${params.id}`)
   }
 
-  // Encontrar aula anterior e próxima
   const allLessons = lesson.module.course.modules.flatMap((m) =>
     m.lessons.map((l) => ({ ...l, moduleId: m.id }))
   )
@@ -107,7 +98,7 @@ export default async function LessonPage({
       courseId={params.id}
       previousLesson={previousLesson}
       nextLesson={nextLesson}
-      userId={uid}
+      userId={userId}
     />
   )
 }

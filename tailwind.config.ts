@@ -9,22 +9,44 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        hub: {
-          sidebar: '#221E36',
-          accent: '#6932CB',
+        ds: {
+          bg: 'var(--color-bg)',
+          sidebar: 'var(--color-sidebar)',
+          surface: 'var(--color-surface)',
+          'surface-hover': 'var(--color-surface-hover)',
+          card: 'var(--color-card)',
+          'card-hover': 'var(--color-card-hover)',
+          border: 'var(--color-border)',
+          green: 'var(--color-green)',
+          'green-dim': 'var(--color-green-dim)',
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted: 'var(--color-text-muted)',
         },
-        primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+        brand: {
+          DEFAULT: 'var(--color-brand)',
         },
+      },
+      borderRadius: {
+        'ds-sm': 'var(--radius-sm)',
+        'ds-md': 'var(--radius-md)',
+        'ds-lg': 'var(--radius-lg)',
+        'ds-xl': 'var(--radius-xl)',
+        pill: 'var(--radius-pill)',
+      },
+      fontFamily: {
+        sans: ['var(--font-family)', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      spacing: {
+        'ds-xs': 'var(--space-xs)',
+        'ds-sm': 'var(--space-sm)',
+        'ds-md': 'var(--space-md)',
+        'ds-lg': 'var(--space-lg)',
+        'ds-xl': 'var(--space-xl)',
+        'ds-2xl': 'var(--space-2xl)',
+      },
+      maxWidth: {
+        sidebar: 'var(--sidebar-width)',
       },
     },
   },

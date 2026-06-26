@@ -11,11 +11,12 @@ export default async function ContactPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto">
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#212529] mb-1 md:mb-2">Contact</h1>
-        <p className="text-gray-600 text-sm sm:text-base">Get in touch with our support team.</p>
-      </div>
+    <div className="max-w-4xl ds-page-shell">
+      <header className="mb-6 md:mb-8">
+        <p className="ds-label mb-2">Prohub.</p>
+        <h1 className="ds-page-title text-2xl sm:text-3xl mb-1">Contact</h1>
+        <p className="text-ds-secondary text-sm sm:text-base">Get in touch with our support team.</p>
+      </header>
 
       <ContactSection />
     </div>

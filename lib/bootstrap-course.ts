@@ -4,6 +4,8 @@
  */
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { bootstrapExpertCoursesIfMissing } from '@/lib/expert-courses'
+import { bootstrapCategoriesIfMissing } from '@/lib/categories'
 
 const LESSON_DURATIONS: Record<string, number> = {
   'Start here': 5,
@@ -90,6 +92,36 @@ export async function bootstrapCourseIfEmpty(): Promise<void> {
     }
   } catch {
     // ignore (ex.: mock Prisma no Vercel)
+  }
+}
+
+export async function bootstrapCatalogCoursesIfMissing(): Promise<void> {
+  await bootstrapExpertCoursesIfMissing()
+  await bootstrapCategoriesIfMissing()
+}
+
+/** @deprecated Use bootstrapCatalogCoursesIfMissing */
+export async function bootstrapShowcaseCourseIfMissing(): Promise<void> {
+  await bootstrapCatalogCoursesIfMissing()
+}
+
+/**
+ * Garante que o usuário está inscrito em todos os cursos disponíveis.
+ */
+export async function ensureUserEnrolledInAllCourses(userId: string): Promise<void> {
+  if (userId.startsWith('magic-')) return
+  try {
+    const courses = await prisma.course.findMany({ select: { id: true } })
+    for (const course of courses) {
+      if (!course.id) continue
+      await prisma.enrollment.upsert({
+        where: { userId_courseId: { userId, courseId: course.id } },
+        create: { userId, courseId: course.id },
+        update: {},
+      })
+    }
+  } catch {
+    // ignore
   }
 }
 

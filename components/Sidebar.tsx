@@ -2,80 +2,81 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, Mail, Play, LogOut } from 'lucide-react'
-import { signOut } from 'next-auth/react'
+import {
+  Home,
+  Award,
+  User,
+  Mail,
+} from 'lucide-react'
 
-const menuItems = [
-  { href: '/dashboard', label: 'Contents', icon: LayoutDashboard },
-  { href: '/dashboard/courses', label: 'Classes', icon: BookOpen },
+const mainItems = [
+  { href: '/dashboard', label: 'Start', icon: Home, exact: true },
+  { href: '/dashboard/certificates', label: 'Certificates', icon: Award },
+  { href: '/dashboard/account', label: 'My Account', icon: User },
   { href: '/dashboard/contact', label: 'Contact', icon: Mail },
+]
+
+const footerItems = [
+  { href: '/dashboard/courses', label: 'Search' },
+  { href: '/dashboard/terms', label: 'Terms of Use' },
+  { href: '/dashboard/privacy', label: 'Privacy Policies' },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/login' })
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact) return pathname === href
+    return pathname === href || pathname?.startsWith(`${href}/`)
   }
 
   return (
-    <div
-      className="w-14 md:w-64 text-white min-h-screen flex flex-col flex-shrink-0"
-      style={{ backgroundColor: '#221E36' }}
-    >
-      <div className="p-3 md:p-6 border-b border-white/10 flex justify-center md:justify-start">
-        <Link
-          href="/dashboard"
-          className="flex items-center space-x-2"
-          title="Prohub."
-        >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: '#6932CB' }}
-          >
-            <Play className="w-4 h-4 text-white fill-white" strokeWidth={3} />
-          </div>
-          <span className="text-xl font-bold hidden md:inline">Prohub.</span>
+    <aside className="w-[72px] md:w-[var(--sidebar-width)] min-h-screen flex flex-col flex-shrink-0 ds-sidebar-glass fixed md:sticky top-0 z-50 h-screen">
+      <div className="px-4 pt-6 pb-4">
+        <Link href="/dashboard" className="block" title="Prohub.">
+          <span className="hidden md:inline text-2xl font-black tracking-tight text-brand">
+            PROHUB
+          </span>
+          <span className="md:hidden text-xl font-black text-brand">P</span>
         </Link>
       </div>
 
-      <nav className="flex-1 p-2 md:p-4 space-y-1 md:space-y-2">
-        {menuItems.map((item) => {
+      <nav className="flex-1 overflow-y-auto px-2 pb-4">
+        {mainItems.map((item) => {
           const Icon = item.icon
-          const isActive =
-            pathname === item.href ||
-            (item.href !== '/dashboard' && pathname?.startsWith(item.href))
-
+          const active = isActive(item.href, item.exact)
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               title={item.label}
-              className={`flex items-center justify-center md:justify-start space-x-3 px-2 md:px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'text-white'
-                  : 'text-gray-300 hover:bg-white/10 hover:text-white'
+              className={`ds-nav-item justify-center md:justify-start ${
+                active ? 'ds-nav-item-active' : ''
               }`}
-              style={isActive ? { backgroundColor: '#6932CB' } : {}}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className="font-medium hidden md:inline">{item.label}</span>
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden md:inline">{item.label}</span>
             </Link>
           )
         })}
       </nav>
 
-      <div className="p-2 md:p-4 border-t border-white/10">
-        <button
-          type="button"
-          onClick={handleSignOut}
-          title="Sign out"
-          className="w-full flex items-center justify-center md:justify-start space-x-3 px-2 md:px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-        >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          <span className="font-medium hidden md:inline">Sign out</span>
-        </button>
+      <div className="hidden md:block mt-auto border-t border-ds-border px-4 pt-5 pb-6">
+        <ul className="space-y-3">
+          {footerItems.map((item) => (
+            <li key={item.label}>
+              <Link
+                href={item.href}
+                className={`ds-sidebar-footer-link ${
+                  pathname === item.href ? 'ds-sidebar-footer-link-active' : ''
+                }`}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
+    </aside>
   )
 }

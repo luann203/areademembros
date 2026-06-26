@@ -4,15 +4,12 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Detectar se estamos em build time
 const isBuildTime =
   process.env.NEXT_PHASE === 'phase-production-build' ||
   process.env.NEXT_PHASE === 'phase-development-build'
 
-// No Vercel usar mock (SQLite com file: não funciona em serverless)
 const isVercel = process.env.VERCEL === '1'
 
-// Objeto com métodos que retornam vazio (para usar no Vercel sem banco)
 const mockDelegate = {
   findMany: () => Promise.resolve([]),
   findUnique: () => Promise.resolve(null),
@@ -23,9 +20,9 @@ const mockDelegate = {
   delete: () => Promise.resolve({}),
   deleteMany: () => Promise.resolve({ count: 0 }),
   createMany: () => Promise.resolve({ count: 0 }),
+  count: () => Promise.resolve(0),
 }
 
-// Proxy que retorna resultados vazios (sem conectar ao banco)
 function createMockPrisma(): PrismaClient {
   return new Proxy({} as PrismaClient, {
     get(_target, prop: string) {
@@ -35,7 +32,6 @@ function createMockPrisma(): PrismaClient {
   }) as PrismaClient
 }
 
-// Criar Prisma Client apenas em runtime, não durante build
 function createPrismaClient(): PrismaClient {
   if (isBuildTime) {
     return new Proxy({} as PrismaClient, {
@@ -44,12 +40,10 @@ function createPrismaClient(): PrismaClient {
           return () => Promise.resolve(null)
         }
         return undefined
-      }
+      },
     }) as PrismaClient
   }
 
-  // No Vercel: usar mock só quando não houver banco (evita erro de conexão SQLite no serverless).
-  // Se DATABASE_URL estiver definido (ex.: Vercel Postgres), usar o cliente real.
   if (isVercel && !process.env.DATABASE_URL) {
     return createMockPrisma()
   }
@@ -59,23 +53,35 @@ function createPrismaClient(): PrismaClient {
   })
 }
 
-// Export usando Proxy para lazy initialization - só cria quando realmente acessado
-export const prisma = new Proxy({} as PrismaClient, {
-  get(target, prop) {
-    if (!globalForPrisma.prisma) {
-      globalForPrisma.prisma = createPrismaClient()
-    }
-    const value = globalForPrisma.prisma[prop as keyof PrismaClient]
-    if (typeof value === 'function') {
-      return value.bind(globalForPrisma.prisma)
-    }
-    return value
-  }
-})
+function isStalePrismaClient(client: PrismaClient): boolean {
+  const delegate = (client as PrismaClient & { integration?: { findMany?: unknown } }).integration
+  return typeof delegate?.findMany !== 'function'
+}
 
-if (process.env.NODE_ENV !== 'production' && !isBuildTime) {
-  // Garantir que o prisma seja criado para cache em desenvolvimento
+function getPrismaClient(): PrismaClient {
+  if (globalForPrisma.prisma && isStalePrismaClient(globalForPrisma.prisma)) {
+    void globalForPrisma.prisma.$disconnect().catch(() => {})
+    globalForPrisma.prisma = undefined
+  }
+
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient()
   }
+
+  return globalForPrisma.prisma
+}
+
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient()
+    const value = client[prop as keyof PrismaClient]
+    if (typeof value === 'function') {
+      return value.bind(client)
+    }
+    return value
+  },
+})
+
+if (process.env.NODE_ENV !== 'production' && !isBuildTime) {
+  getPrismaClient()
 }
