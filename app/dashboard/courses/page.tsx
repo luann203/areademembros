@@ -2,80 +2,50 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { bootstrapCourseIfEmpty, bootstrapCatalogCoursesIfMissing, ensureUserEnrolledInAllCourses } from '@/lib/bootstrap-course'
-import { resolveUserId } from '@/lib/resolve-user-id'
+import { ensureBootstrapOnce } from '@/lib/bootstrap-course'
+import { ensureUserEnrolledInAllCoursesOnce } from '@/lib/enrollment-sync'
+import { fetchUserEnrollmentsWithCourses } from '@/lib/categories'
+import { requireSessionUserId } from '@/lib/get-session-user'
 import { buildStreamingCourse, sortByNewest } from '@/lib/streaming-courses'
 import CoursePosterRow from '@/components/CoursePosterRow'
 import CourseModulesList from '@/components/CourseModulesList'
 
-export default async function ClassesPage() {
+export default async function ClassesPage({
+  searchParams,
+}: {
+  searchParams?: { q?: string }
+}) {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  await bootstrapCourseIfEmpty()
-  await bootstrapCatalogCoursesIfMissing()
+  const userId = await requireSessionUserId(session)
+  if (!userId) redirect('/login')
 
-  const userId = await resolveUserId(session)
+  await ensureBootstrapOnce()
+  await ensureUserEnrolledInAllCoursesOnce(userId)
 
-  if (userId) {
-    await ensureUserEnrolledInAllCourses(userId)
+  const query = searchParams?.q?.trim().toLowerCase() ?? ''
+
+  const enrollments = await fetchUserEnrollmentsWithCourses(userId)
+  let courses = enrollments.map((e) => e.course)
+
+  if (query) {
+    courses = courses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(query) ||
+        course.description.toLowerCase().includes(query) ||
+        course.modules.some(
+          (module) =>
+            module.title.toLowerCase().includes(query) ||
+            module.lessons.some(
+              (lesson) =>
+                lesson.title.toLowerCase().includes(query) ||
+                lesson.description.toLowerCase().includes(query)
+            )
+        )
+    )
   }
 
-  let enrollments = userId
-    ? await prisma.enrollment.findMany({
-        where: { userId },
-        include: {
-          course: {
-            include: {
-              modules: {
-                orderBy: { order: 'asc' },
-                include: {
-                  lessons: {
-                    orderBy: { order: 'asc' },
-                    include: {
-                      progress: {
-                        where: { userId },
-                        select: { completed: true, progress: true, updatedAt: true },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      })
-    : []
-
-  if (enrollments.length === 0 && userId) {
-    await ensureUserEnrolledInAllCourses(userId)
-    enrollments = await prisma.enrollment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          include: {
-            modules: {
-              orderBy: { order: 'asc' },
-              include: {
-                lessons: {
-                  orderBy: { order: 'asc' },
-                  include: {
-                    progress: {
-                      where: { userId },
-                      select: { completed: true, progress: true, updatedAt: true },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-  }
-
-  const courses = enrollments.map((e) => e.course)
   const streamingCourses = sortByNewest(courses.map((course) => buildStreamingCourse(course)))
 
   return (
@@ -84,7 +54,9 @@ export default async function ClassesPage() {
         <p className="ds-label mb-2">Prohub.</p>
         <h1 className="ds-page-title text-2xl sm:text-3xl mb-1">Classes</h1>
         <p className="text-ds-secondary text-sm sm:text-base">
-          All your lessons in one place
+          {query
+            ? `Results for "${searchParams?.q?.trim()}"`
+            : 'All your lessons in one place'}
         </p>
       </header>
 
@@ -96,7 +68,7 @@ export default async function ClassesPage() {
 
       {courses.length === 0 ? (
         <p className="text-center py-12 text-ds-muted text-lg">
-          You are not enrolled in any course yet.
+          {query ? 'No courses found for your search.' : 'You are not enrolled in any course yet.'}
         </p>
       ) : (
         <ul className="space-y-6 list-none p-0 m-0 max-w-6xl">

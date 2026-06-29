@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
-import ReactPlayer from 'react-player'
 import CommentSection from './CommentSection'
-import { Lesson, Module, Comment, User, LessonProgress } from '@prisma/client'
+import LessonFooter from './LessonFooter'
+import LessonVideoPlayer from './LessonVideoPlayer'
+import { Lesson, Module, LessonProgress } from '@prisma/client'
 
 type LessonWithRelations = Lesson & {
   module: Module & {
@@ -15,9 +16,6 @@ type LessonWithRelations = Lesson & {
     }
   }
   progress: LessonProgress[]
-  comments: (Comment & {
-    user: Pick<User, 'id' | 'name' | 'email'>
-  })[]
 }
 
 type LessonWithModule = {
@@ -54,7 +52,7 @@ function LessonDescription({ text }: { text: string }) {
             href={formatted}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-[#2C3E50] hover:underline break-all"
+            className="font-medium text-ds-green hover:underline break-all"
           >
             {formatted}
           </a>
@@ -65,27 +63,26 @@ function LessonDescription({ text }: { text: string }) {
           <a
             key={j}
             href={`mailto:${formatted}`}
-            className="font-medium text-[#2C3E50] hover:underline"
+            className="font-medium text-ds-green hover:underline"
           >
             {formatted}
           </a>
         )
       }
       return isBold ? (
-        <strong key={j} className="font-medium text-[#2C3E50]">
+        <strong key={j} className="font-semibold text-ds-primary">
           {formatted}
         </strong>
       ) : (
-        <span key={j}>{formatted}</span>
+        <span key={j} className="text-ds-secondary">
+          {formatted}
+        </span>
       )
     })
   }
 
   return (
-    <div
-      className="text-[14px] text-[#34495E] font-normal leading-[1.65] space-y-6"
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif' }}
-    >
+    <div className="text-sm sm:text-[15px] text-ds-secondary font-normal leading-relaxed space-y-5">
       {paragraphs.map((paragraph, i) => {
         const trimmed = paragraph.trim()
         const isContactBlock =
@@ -95,10 +92,7 @@ function LessonDescription({ text }: { text: string }) {
 
         if (isContactBlock) {
           return (
-            <div
-              key={i}
-              className="text-[14px] text-[#34495E] leading-[1.65]"
-            >
+            <div key={i} className="text-sm sm:text-[15px] text-ds-secondary leading-relaxed">
               <p>
                 {trimmed.split(/\n/).map((line, k) => (
                   <span key={k}>
@@ -113,7 +107,7 @@ function LessonDescription({ text }: { text: string }) {
 
         if (isSignOff) {
           return (
-            <p key={i} className="text-[13px] text-[#34495E] italic leading-[1.6]">
+            <p key={i} className="text-sm text-ds-muted italic leading-relaxed">
               {renderFormattedText(trimmed)}
             </p>
           )
@@ -268,23 +262,11 @@ export default function LessonContent({
                   </div>
                 </div>
               ) : (
-                <div className="aspect-video">
-                  <ReactPlayer
-                    url={lesson.videoUrl}
-                    width="100%"
-                    height="100%"
-                    controls
-                    onProgress={({ played }) => handleProgress(played)}
-                    onEnded={handleEnded}
-                    config={{
-                      file: {
-                        attributes: {
-                          controlsList: 'nodownload',
-                        },
-                      },
-                    }}
-                  />
-                </div>
+                <LessonVideoPlayer
+                  url={lesson.videoUrl}
+                  onProgress={handleProgress}
+                  onEnded={handleEnded}
+                />
               )
             ) : (
               <div className="aspect-video flex items-center justify-center text-white">
@@ -294,24 +276,24 @@ export default function LessonContent({
           </div>
 
           {/* Título e descrição */}
-          <div className="mt-4 sm:mt-6 md:mt-8">
-            <h1
-              className="text-xl sm:text-2xl md:text-[28px] font-bold tracking-tight mb-4 sm:mb-6 normal-case"
-              style={{
-                color: '#2C3E50',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-              }}
-            >
+          <div className="mt-4 sm:mt-6 md:mt-8 ds-card border border-ds-border rounded-lg p-4 sm:p-6">
+            <h1 className="text-xl sm:text-2xl md:text-[28px] font-bold tracking-tight mb-4 sm:mb-6 normal-case text-ds-primary">
               {lesson.title.charAt(0).toUpperCase() +
                 lesson.title.slice(1).toLowerCase()}
             </h1>
             <LessonDescription text={lesson.description} />
           </div>
 
+          {lesson.showFooter !== false && (
+            <div className="mt-6 sm:mt-8">
+              <LessonFooter />
+            </div>
+          )}
+
           {/* Seção de Comentários */}
           <div className="bg-ds-card rounded-lg border border-ds-border p-4 sm:p-6 mt-6 sm:mt-10">
             <h2 className="text-lg sm:text-xl font-semibold text-ds-primary mb-3 sm:mb-4">Comments</h2>
-            <CommentSection lessonId={lesson.id} comments={lesson.comments} />
+            <CommentSection lessonId={lesson.id} />
           </div>
         </div>
 

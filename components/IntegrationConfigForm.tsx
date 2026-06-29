@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Play, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Copy, Check } from 'lucide-react'
 import PlatformLogo from '@/components/PlatformLogo'
 import type { IntegrationPlatform, IntegrationModality, IntegrationRecord } from '@/types/integration'
 
@@ -16,7 +16,7 @@ type IntegrationConfigFormProps = {
 }
 
 const HOTMART_INSTRUCTIONS =
-  'Entre na sua conta do Hotmart e clique em Ferramentas > Webhook (API e Notificações), depois crie uma nova configuração de acordo com o curso que você quer vender. No painel direito do Hotmart, marque todos os eventos, em seguida, gere uma URL de notificação abaixo e cadastre no Hotmart.'
+  'Entre na sua conta do Hotmart e clique em Ferramentas > Webhook (API e Notificações), depois crie uma nova configuração. Marque os eventos de compra aprovada (PURCHASE_APPROVED / PURCHASE_COMPLETE) e também reembolso/cancelamento (PURCHASE_REFUNDED / PURCHASE_CANCELED). Gere a URL abaixo e cadastre na Hotmart. Compra aprovada: o aluno é criado, matriculado nos cursos selecionados e recebe a senha na área de notificações. Reembolso ou cancelamento: a matrícula nesses cursos é removida automaticamente.'
 
 function parseCourseIds(value: string): string[] {
   try {
@@ -112,43 +112,31 @@ export default function IntegrationConfigForm({
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
+    <div className="ds-page-shell max-w-5xl">
       <header className="flex items-center justify-between mb-8 gap-4">
         <div>
-          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-1">
-            Prohub.
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#212529]">{platform.name}</h1>
+          <p className="ds-label mb-2">Prohub.</p>
+          <h1 className="ds-page-title text-2xl sm:text-3xl">{platform.name}</h1>
         </div>
-        <Link
-          href="/dashboard/integrations"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-ds-border rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
-        >
+        <Link href="/dashboard/integrations" className="ds-btn-secondary flex-shrink-0">
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </Link>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8">
-        <aside className="space-y-4">
-          <div className="bg-ds-card border border-ds-border rounded-lg p-6 flex items-center justify-center h-40">
+        <aside>
+          <div className="ds-card p-6 flex items-center justify-center h-40">
             <PlatformLogo platform={platform} size="lg" />
           </div>
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border border-ds-border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Play className="w-4 h-4" />
-            Ver como funciona
-          </button>
         </aside>
 
-        <div className="bg-ds-card border border-ds-border rounded-lg p-6 sm:p-8">
-          <p className="text-gray-600 text-sm leading-relaxed mb-8">{HOTMART_INSTRUCTIONS}</p>
+        <div className="ds-card p-6 sm:p-8">
+          <p className="text-ds-secondary text-sm leading-relaxed mb-8">{HOTMART_INSTRUCTIONS}</p>
 
           <div className="space-y-5">
             <div>
-              <label htmlFor="config-name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="config-name" className="ds-label block mb-2">
                 Nome da configuração
               </label>
               <input
@@ -156,13 +144,13 @@ export default function IntegrationConfigForm({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E50914]/30 focus:border-[#E50914] outline-none"
+                className="ds-input"
                 placeholder={`Minha integração ${platform.name}`}
               />
             </div>
 
             <div>
-              <label htmlFor="config-token" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="config-token" className="ds-label block mb-2">
                 Token {platform.name}
               </label>
               <input
@@ -170,12 +158,12 @@ export default function IntegrationConfigForm({
                 type="text"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E50914]/30 focus:border-[#E50914] outline-none"
+                className="ds-input"
               />
             </div>
 
             <div>
-              <label htmlFor="config-offer" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="config-offer" className="ds-label block mb-2">
                 ID da oferta {platform.name}
               </label>
               <input
@@ -184,15 +172,15 @@ export default function IntegrationConfigForm({
                 value={offerId}
                 onChange={(e) => setOfferId(e.target.value)}
                 placeholder="Exemplo: gcc42kqj"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E50914]/30 focus:border-[#E50914] outline-none"
+                className="ds-input"
               />
-              <p className="text-xs text-gray-400 mt-1.5">
+              <p className="text-xs text-ds-muted mt-1.5">
                 Deixe em branco, preencha apenas em casos especiais.
               </p>
             </div>
 
             <div>
-              <span className="block text-sm font-medium text-gray-700 mb-2">Modalidade</span>
+              <span className="ds-label block mb-2">Modalidade</span>
               <div className="flex flex-wrap gap-2">
                 {(['courses', 'subscription', 'unlimited'] as IntegrationModality[]).map((m) => (
                   <button
@@ -201,8 +189,8 @@ export default function IntegrationConfigForm({
                     onClick={() => setModality(m)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       modality === m
-                        ? 'bg-[#E50914]/10 border-[#E50914] text-[#E50914]'
-                        : 'border-ds-border text-gray-600 hover:border-gray-300'
+                        ? 'bg-brand/10 border-brand text-white'
+                        : 'border-ds-border text-ds-secondary hover:text-white hover:border-white/20'
                     }`}
                   >
                     {m === 'courses'
@@ -217,43 +205,41 @@ export default function IntegrationConfigForm({
 
             {courses.length > 0 && (
               <div>
-                <span className="block text-sm font-medium text-gray-700 mb-2">
-                  Selecionar cursos vinculados
-                </span>
-                <div className="border border-ds-border rounded-lg divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                <span className="ds-label block mb-2">Selecionar cursos vinculados</span>
+                <div className="border border-ds-border rounded-lg divide-y divide-ds-border max-h-48 overflow-y-auto">
                   {courses.map((course) => (
                     <label
                       key={course.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer"
                     >
                       <input
                         type="checkbox"
                         checked={selectedCourses.includes(course.id)}
                         onChange={() => toggleCourse(course.id)}
-                        className="rounded border-gray-300 text-[#E50914] focus:ring-[#E50914]"
+                        className="rounded border-ds-border text-brand focus:ring-brand"
                       />
-                      <span className="text-sm text-gray-700">{course.title}</span>
+                      <span className="text-sm text-white">{course.title}</span>
                     </label>
                   ))}
                 </div>
               </div>
             )}
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
             {saved && webhookUrl && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-green-800 mb-2">
+              <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+                <p className="text-sm font-medium text-green-300 mb-2">
                   URL de notificação {isEditing ? 'atualizada' : 'gerada'} com sucesso!
                 </p>
                 <div className="flex items-start gap-2">
-                  <code className="flex-1 text-xs bg-ds-card border border-green-200 rounded px-3 py-2 break-all">
+                  <code className="flex-1 text-xs text-ds-secondary bg-ds-surface border border-ds-border rounded px-3 py-2 break-all">
                     {webhookUrl}
                   </code>
                   <button
                     type="button"
                     onClick={copyUrl}
-                    className="flex-shrink-0 p-2 text-green-700 hover:bg-green-100 rounded-lg transition-colors"
+                    className="flex-shrink-0 p-2 text-green-300 hover:bg-green-500/10 rounded-lg transition-colors"
                     title="Copiar URL"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -261,7 +247,7 @@ export default function IntegrationConfigForm({
                 </div>
                 <Link
                   href="/dashboard/integrations?tab=installed"
-                  className="inline-block mt-4 text-sm font-medium text-[#E50914] hover:underline"
+                  className="inline-block mt-4 text-sm font-medium text-brand hover:underline"
                 >
                   Ver em Integrações instaladas →
                 </Link>
@@ -273,8 +259,7 @@ export default function IntegrationConfigForm({
                 type="button"
                 onClick={handleSave}
                 disabled={loading}
-                className="px-6 py-2.5 rounded-lg text-white font-semibold text-sm transition-colors hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: '#E50914' }}
+                className="ds-btn-brand disabled:opacity-50"
               >
                 {loading
                   ? 'Salvando…'

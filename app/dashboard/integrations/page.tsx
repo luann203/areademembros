@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAdminPage } from '@/lib/require-admin'
 import IntegrationsView from '@/components/IntegrationsView'
 import type { IntegrationRecord, WebhookLogRecord } from '@/types/integration'
 
@@ -12,8 +10,7 @@ type PageProps = {
 }
 
 export default async function IntegrationsPage({ searchParams }: PageProps) {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
+  await requireAdminPage()
 
   const initialTab =
     searchParams.tab === 'installed' || searchParams.tab === 'history'

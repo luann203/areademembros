@@ -39,6 +39,8 @@ export async function POST(
         content: content.trim(),
         userId,
         lessonId: params.lessonId,
+        status: 'pending',
+        read: false,
       },
       include: {
         user: {
@@ -77,6 +79,7 @@ export async function GET(
     const comments = await prisma.comment.findMany({
       where: {
         lessonId: params.lessonId,
+        status: 'approved',
       },
       include: {
         user: {

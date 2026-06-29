@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:turbo": "next dev --turbo",
     "dev:kill": "pkill -f 'next dev' 2>/dev/null || true",
     "dev:reset": "npm run dev:kill && npx prisma generate && rm -rf .next && next dev",
     "postinstall": "prisma generate",
@@ -30,15 +31,19 @@
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
-    "prisma": "^5.7.1",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.0.6",
+    "lucide-react": "^0.303.0",
     "next": "14.0.4",
+    "next-auth": "^4.24.5",
+    "prisma": "^5.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "bcryptjs": "^2.4.3",
-    "next-auth": "^4.24.5",
-    "react-player": "^2.13.0",
-    "lucide-react": "^0.303.0",
-    "date-fns": "^3.0.6"
+    "react-player": "^2.13.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

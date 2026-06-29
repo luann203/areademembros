@@ -291,7 +291,7 @@ export default function AccountForm({ profile }: AccountFormProps) {
         <button
           type="button"
           onClick={handleCancel}
-          className="px-5 py-2.5 text-sm font-medium text-ds-secondary hover:text-gray-800"
+          className="px-5 py-2.5 text-sm font-medium text-ds-secondary hover:text-white"
         >
           Cancel
         </button>

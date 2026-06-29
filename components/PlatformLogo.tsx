@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { IntegrationPlatform } from '@/types/integration'
 
 type PlatformLogoProps = {
@@ -5,24 +6,28 @@ type PlatformLogoProps = {
   size?: 'sm' | 'md' | 'lg'
 }
 
-const sizeClasses = {
-  sm: 'h-10 text-sm',
-  md: 'h-16 text-lg',
-  lg: 'h-24 text-2xl',
+const imageHeight = {
+  sm: 'h-8',
+  md: 'h-10',
+  lg: 'h-12',
 }
 
 export default function PlatformLogo({ platform, size = 'md' }: PlatformLogoProps) {
   return (
-    <div
-      className={`flex items-center justify-center font-bold tracking-tight ${sizeClasses[size]}`}
-    >
+    <div className="flex items-center justify-center">
       {platform.slug === 'hotmart' ? (
-        <span className="flex items-center gap-2">
-          <span className="text-[#F04E23] text-3xl">🔥</span>
-          <span className="text-black font-bold lowercase">hotmart</span>
-        </span>
+        <Image
+          src="/Logo_hotmart.png?v=2"
+          alt="Hotmart"
+          width={180}
+          height={48}
+          className={`w-auto object-contain ${imageHeight[size]}`}
+          unoptimized
+        />
       ) : (
-        <span style={{ color: platform.brandColor }}>{platform.name}</span>
+        <span className="font-bold tracking-tight" style={{ color: platform.brandColor }}>
+          {platform.name}
+        </span>
       )}
     </div>
   )

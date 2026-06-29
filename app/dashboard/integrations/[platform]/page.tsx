@@ -1,7 +1,6 @@
-import { redirect, notFound } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { requireAdminPage } from '@/lib/require-admin'
 import { getPlatformBySlug } from '@/lib/integration-platforms'
 import IntegrationConfigForm from '@/components/IntegrationConfigForm'
 import type { IntegrationRecord } from '@/types/integration'
@@ -14,8 +13,7 @@ type PageProps = {
 }
 
 export default async function IntegrationPlatformPage({ params, searchParams }: PageProps) {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
+  await requireAdminPage()
 
   const platform = getPlatformBySlug(params.platform)
   if (!platform) notFound()

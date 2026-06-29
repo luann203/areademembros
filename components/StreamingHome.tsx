@@ -2,24 +2,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Play, Info } from 'lucide-react'
 import CoursePosterRow from '@/components/CoursePosterRow'
-import type { CourseCategory } from '@/lib/streaming-courses'
+import type { CourseCategory, StreamingCourse } from '@/types/streaming'
 
-export type StreamingCourse = {
-  id: string
-  title: string
-  description: string
-  imageUrl: string | null
-  totalLessons: number
-  totalDuration: number
-  moduleCount: number
-  progressPct: number
-  firstLessonId: string | null
-  resumeLessonId: string | null
-  createdAt: string
-  lastActivityAt: string | null
-  inProgress: boolean
-  canContinueWatching: boolean
-}
+export type { StreamingCourse, CourseCategory }
 
 type StreamingHomeProps = {
   courses: StreamingCourse[]

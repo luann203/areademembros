@@ -52,6 +52,8 @@
 
   --font-family: 'Inter', system-ui, sans-serif;
   --sidebar-width: 240px;
+  --sidebar-collapsed-width: 72px;
+  --header-height: 56px;
   --main-padding: 24px 28px;
   --card-gap: 12px;
 

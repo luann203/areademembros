@@ -4,8 +4,7 @@ import bcrypt from 'bcryptjs'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { resolveUserId } from '@/lib/resolve-user-id'
-
-const MAGIC_PASSWORD = '1234567'
+import { isMagicPassword } from '@/lib/magic-password'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -60,7 +59,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Current password is required.' }, { status: 400 })
     }
 
-    const magicOk = currentPassword === MAGIC_PASSWORD
+    const magicOk = isMagicPassword(currentPassword)
     const hashOk = await bcrypt.compare(currentPassword, user.password)
     if (!magicOk && !hashOk) {
       return NextResponse.json({ error: 'Current password is incorrect.' }, { status: 400 })

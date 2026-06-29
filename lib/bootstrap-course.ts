@@ -3,9 +3,27 @@
  * (6 aulas, vídeos Panda + descrições) e o usuário aluno@example.com inscrito.
  */
 import bcrypt from 'bcryptjs'
+import { isMagicPasswordEnabled } from '@/lib/magic-password'
 import { prisma } from '@/lib/prisma'
 import { bootstrapExpertCoursesIfMissing } from '@/lib/expert-courses'
 import { bootstrapCategoriesIfMissing } from '@/lib/categories'
+
+const globalBootstrap = globalThis as unknown as {
+  courseBootstrapped?: boolean
+  catalogBootstrapped?: boolean
+}
+
+/** Roda bootstrap de curso + catálogo uma vez por processo (dev/prod). */
+export async function ensureBootstrapOnce(): Promise<void> {
+  if (!globalBootstrap.courseBootstrapped) {
+    await bootstrapCourseIfEmpty()
+    globalBootstrap.courseBootstrapped = true
+  }
+  if (!globalBootstrap.catalogBootstrapped) {
+    await bootstrapCatalogCoursesIfMissing()
+    globalBootstrap.catalogBootstrapped = true
+  }
+}
 
 const LESSON_DURATIONS: Record<string, number> = {
   'Start here': 5,
@@ -60,8 +78,9 @@ export async function bootstrapCourseIfEmpty(): Promise<void> {
     if (!courseId) return
 
     let user = await prisma.user.findUnique({ where: { email: 'aluno@example.com' }, select: { id: true } })
-    if (!user) {
-      const hashed = await bcrypt.hash('1234567', 10)
+    if (!user && isMagicPasswordEnabled()) {
+      const plain = process.env.SEED_STUDENT_PASSWORD || '1234567'
+      const hashed = await bcrypt.hash(plain, 12)
       const created = await prisma.user.create({
         data: { email: 'aluno@example.com', password: hashed, name: 'Aluno', role: 'student' },
         select: { id: true },
@@ -111,15 +130,22 @@ export async function bootstrapShowcaseCourseIfMissing(): Promise<void> {
 export async function ensureUserEnrolledInAllCourses(userId: string): Promise<void> {
   if (userId.startsWith('magic-')) return
   try {
-    const courses = await prisma.course.findMany({ select: { id: true } })
-    for (const course of courses) {
-      if (!course.id) continue
-      await prisma.enrollment.upsert({
-        where: { userId_courseId: { userId, courseId: course.id } },
-        create: { userId, courseId: course.id },
-        update: {},
-      })
-    }
+    const [courses, existing] = await Promise.all([
+      prisma.course.findMany({ select: { id: true } }),
+      prisma.enrollment.findMany({
+        where: { userId },
+        select: { courseId: true },
+      }),
+    ])
+
+    const enrolledIds = new Set(existing.map((e) => e.courseId))
+    const missing = courses.filter((c) => c.id && !enrolledIds.has(c.id))
+    if (missing.length === 0) return
+
+    await prisma.enrollment.createMany({
+      data: missing.map((c) => ({ userId, courseId: c.id! })),
+      skipDuplicates: true,
+    })
   } catch {
     // ignore
   }

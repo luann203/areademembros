@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { StreamingCourse } from '@/components/StreamingHome'
+import type { StreamingCourse } from '@/types/streaming'
 
 const POSTER_GRADIENTS = [
   'linear-gradient(135deg, #0d1a0d 0%, #1a3018 100%)',

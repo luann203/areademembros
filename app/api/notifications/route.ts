@@ -12,7 +12,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const notifications = await prisma.notification.findMany({
-    where: { userId },
+    where: { userId, read: false },
     orderBy: { createdAt: 'desc' },
     take: 20,
   })
@@ -32,9 +32,8 @@ export async function PATCH() {
   const userId = await resolveUserId(session)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await prisma.notification.updateMany({
+  await prisma.notification.deleteMany({
     where: { userId, read: false },
-    data: { read: true },
   })
 
   return NextResponse.json({ ok: true })

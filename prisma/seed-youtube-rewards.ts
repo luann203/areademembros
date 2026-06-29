@@ -159,7 +159,8 @@ async function main() {
   // 6. Garantir que exista pelo menos um aluno; inscrever todos no curso
   let users = await prisma.user.findMany({ where: { role: 'student' } })
   if (users.length === 0) {
-    const senha = await bcrypt.hash('1234567', 10)
+    const plain = process.env.SEED_STUDENT_PASSWORD || 'aluno123'
+    const senha = await bcrypt.hash(plain, 12)
     const aluno = await prisma.user.create({
       data: {
         email: 'aluno@example.com',
@@ -169,7 +170,7 @@ async function main() {
       },
     })
     users = [aluno]
-    console.log('Usuário criado: aluno@example.com (senha: 1234567)')
+    console.log('Usuário criado: aluno@example.com (senha definida em SEED_STUDENT_PASSWORD ou padrão aluno123)')
   }
   for (const user of users) {
     await prisma.enrollment.create({

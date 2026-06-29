@@ -113,14 +113,12 @@ async function enrollAllStudents(courseId: string) {
     where: { role: 'student' },
     select: { id: true },
   })
-  for (const student of students) {
-    if (!student.id) continue
-    await prisma.enrollment.upsert({
-      where: { userId_courseId: { userId: student.id, courseId } },
-      create: { userId: student.id, courseId },
-      update: {},
-    })
-  }
+  if (students.length === 0) return
+
+  await prisma.enrollment.createMany({
+    data: students.map((student) => ({ userId: student.id, courseId })),
+    skipDuplicates: true,
+  })
 }
 
 function buildCourseData(def: ExpertCourseDef) {
@@ -152,16 +150,20 @@ function buildCourseData(def: ExpertCourseDef) {
 
 export async function bootstrapExpertCoursesIfMissing(): Promise<void> {
   try {
-    for (const def of EXPERT_COURSES) {
-      const existing = await prisma.course.findFirst({
-        where: { title: def.title },
-        select: { id: true, imageUrl: true },
-      })
+    const titles = EXPERT_COURSES.map((c) => c.title)
+    const existing = await prisma.course.findMany({
+      where: { title: { in: titles } },
+      select: { id: true, title: true, imageUrl: true },
+    })
+    const existingByTitle = new Map(existing.map((c) => [c.title, c]))
 
-      if (existing) {
-        if (existing.imageUrl !== def.imageUrl) {
+    for (const def of EXPERT_COURSES) {
+      const found = existingByTitle.get(def.title)
+
+      if (found) {
+        if (found.imageUrl !== def.imageUrl) {
           await prisma.course.update({
-            where: { id: existing.id },
+            where: { id: found.id },
             data: { imageUrl: def.imageUrl },
           })
         }

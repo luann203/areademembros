@@ -5,17 +5,10 @@ export type LessonWithRelationsForPage = Prisma.LessonGetPayload<{
     module: {
       include: {
         course: {
-          include: {
-            modules: {
-              include: { lessons: true }
-            }
-          }
+          select: { id: true; title: true }
         }
       }
     }
     progress: true
-    comments: {
-      include: { user: { select: { id: true; name: true; email: true } } }
-    }
   }
 }>

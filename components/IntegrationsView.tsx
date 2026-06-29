@@ -97,9 +97,9 @@ export default function IntegrationsView({
       </header>
 
       {loadError && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
           Não foi possível carregar os dados das integrações. Reinicie o servidor com{' '}
-          <code className="font-mono text-xs">npx prisma generate && npm run dev</code>.
+          <code className="font-mono text-xs text-amber-100">npx prisma generate && npm run dev</code>.
         </div>
       )}
 
@@ -113,7 +113,7 @@ export default function IntegrationsView({
               className={`flex items-center gap-2 pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 tab === t.id
                   ? 'border-[#E50914] text-[#E50914]'
-                  : 'border-transparent text-ds-secondary hover:text-gray-700'
+                  : 'border-transparent text-ds-secondary hover:text-white'
               }`}
             >
               {t.label}
@@ -140,7 +140,7 @@ export default function IntegrationsView({
               <div className="flex items-center justify-center h-36 p-6">
                 <PlatformLogo platform={platform} size="lg" />
               </div>
-              <div className="border-t border-gray-100 px-4 py-2.5">
+              <div className="border-t border-ds-border px-4 py-2.5">
                 <span className="text-xs text-ds-muted">{platform.categoryLabel}</span>
               </div>
             </Link>
@@ -182,7 +182,7 @@ export default function IntegrationsView({
                         </p>
                         {integration.webhookUrl && (
                           <div className="flex items-start gap-2 mt-2">
-                            <code className="flex-1 text-xs bg-gray-50 border border-ds-border rounded px-2 py-1 break-all">
+                            <code className="flex-1 text-xs text-ds-secondary bg-ds-surface border border-ds-border rounded px-2 py-1 break-all">
                               {integration.webhookUrl}
                             </code>
                             <button
@@ -213,7 +213,7 @@ export default function IntegrationsView({
                         type="button"
                         onClick={() => handleDelete(integration.id)}
                         disabled={deletingId === integration.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
                       >
                         <Trash2 className="w-4 h-4" />
                         {deletingId === integration.id ? 'Removendo…' : 'Remover'}
@@ -237,7 +237,7 @@ export default function IntegrationsView({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-ds-border bg-gray-50">
+                  <tr className="border-b border-ds-border bg-ds-surface">
                     <th className="text-left px-4 py-3 font-semibold text-ds-secondary">Data</th>
                     <th className="text-left px-4 py-3 font-semibold text-ds-secondary">Plataforma</th>
                     <th className="text-left px-4 py-3 font-semibold text-ds-secondary">Evento</th>
@@ -249,7 +249,7 @@ export default function IntegrationsView({
                   {webhookLogs.map((log) => {
                     const platform = getPlatformBySlug(log.platform)
                     return (
-                      <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50/50 align-top">
+                      <tr key={log.id} className="border-b border-ds-border hover:bg-white/5 align-top">
                         <td className="px-4 py-3 text-ds-secondary whitespace-nowrap">
                           {formatDateTime(log.createdAt)}
                         </td>
@@ -260,10 +260,12 @@ export default function IntegrationsView({
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                              log.status === 'received'
-                                ? 'bg-green-100 text-green-700'
+                              log.status === 'processed'
+                                ? 'bg-blue-500/15 text-blue-400'
+                                : log.status === 'received'
+                                ? 'bg-green-500/15 text-green-400'
                                 : log.status === 'failed'
-                                  ? 'bg-red-100 text-red-700'
+                                  ? 'bg-red-500/15 text-red-400'
                                   : 'bg-ds-surface text-ds-secondary'
                             }`}
                           >

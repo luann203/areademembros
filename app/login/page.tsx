@@ -14,6 +14,10 @@ function LoginForm() {
 
   useEffect(() => {
     const err = searchParams.get('error')
+    if (err === 'TooManyAttempts') {
+      setError('Muitas tentativas. Aguarde 1 minuto.')
+      return
+    }
     if (err) setError('Invalid email or password')
   }, [searchParams])
 
@@ -23,12 +27,29 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      await signIn('credentials', {
+      const result = await signIn('credentials', {
         email: email.trim(),
         password: password.trim(),
-        redirect: true,
+        redirect: false,
         callbackUrl: '/dashboard',
       })
+
+      if (result?.error) {
+        if (result.error === 'TooManyAttempts') {
+          setError('Muitas tentativas. Aguarde 1 minuto.')
+        } else {
+          setError('Invalid email or password')
+        }
+        setLoading(false)
+        return
+      }
+
+      if (result?.ok) {
+        window.location.href = '/dashboard'
+        return
+      }
+
+      setError('Invalid email or password')
       setLoading(false)
     } catch (err) {
       console.error('Login exception:', err)

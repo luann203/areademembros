@@ -1,4 +1,6 @@
-import type { StreamingCourse } from '@/components/StreamingHome'
+import type { StreamingCourse, CourseCategory } from '@/types/streaming'
+
+export type { StreamingCourse, CourseCategory }
 
 type LessonWithProgress = {
   id: string
@@ -87,11 +89,4 @@ export function sortByNewest(courses: StreamingCourse[]): StreamingCourse[] {
   return [...courses].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
-}
-
-export type CourseCategory = {
-  id: string
-  name: string
-  slug: string
-  courses: StreamingCourse[]
 }

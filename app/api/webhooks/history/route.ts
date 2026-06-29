@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAdminApi } from '@/lib/require-admin'
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requireAdminApi()
+  if (denied instanceof NextResponse) return denied
 
   const { searchParams } = new URL(request.url)
   const limit = Math.min(Number(searchParams.get('limit') || 50), 200)
